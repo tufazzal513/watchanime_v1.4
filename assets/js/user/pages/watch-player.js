@@ -102,7 +102,7 @@ window.showMovieDetails = (movieId, push = true) => {
         </div>
         ${isSeries ? `<div class="mv-res"><h3>Resources</h3>
           <div class="mv-sel">${seasonKeys.length > 1 ? `<select id="mv-season" onchange="selectSeason(this.value)">${seasonKeys.map(k => `<option value="${esc(k)}" ${k === currentSeasonKey ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select>` : ''}</div>
-          <div class="mv-eps no-scrollbar" id="mv-eps"></div></div>` : ''}
+          <div class="mv-epbar"><button class="mv-ep all" id="mv-eps-all" onclick="openAllEps()">All</button><div class="mv-eps no-scrollbar" id="mv-eps"></div></div></div>` : ''}
       </div>
 
       <div class="mv-side"><h3 class="mv-foryou">For you</h3>
@@ -129,8 +129,10 @@ window.selectSeason = (k) => { currentSeasonKey = k; renderEpRow(); };
 const renderEpRow = () => {
     const movie = allMovies[currentMovieId]; const box = $id('mv-eps'); if (!box) return;
     const eps = movie.seasons[currentSeasonKey] || [];
+    const allBtn = $id('mv-eps-all');
+    if (allBtn) allBtn.style.display = eps.length ? '' : 'none';
     if (!eps.length) { box.innerHTML = '<span class="nf-empty" style="padding:8px">No episodes released yet.</span>'; return; }
-    box.innerHTML = `<button class="mv-ep all" onclick="openAllEps()">All</button>` + eps.map((e, i) => `<button class="mv-ep ${i === currentEpIndex && PL.mode ? 'on' : ''}" title="${esc(e.name)}" onclick="playEpisode(${i})">${String(i + 1).padStart(2, '0')}</button>`).join('');
+    box.innerHTML = eps.map((e, i) => `<button class="mv-ep ${i === currentEpIndex && PL.mode ? 'on' : ''}" title="${esc(e.name)}" onclick="playEpisode(${i})">${String(i + 1).padStart(2, '0')}</button>`).join('');
 };
 window.openAllEps = () => {
     const movie = allMovies[currentMovieId]; const keys = Object.keys(movie.seasons || {});
