@@ -41,9 +41,10 @@ single file, so **order matters**. `theme-boot.js` and `splash-boot.js` stay syn
 ## Ad system removed (v1.4)
 
 The Smart Ad system was removed in v1.4: the recurring popup modal, ad timers, banner iframes,
-ad-network scripts, and the admin "Smart Ad Configuration" panel are all gone. No ad URLs or ad
-DOM remain in the codebase. Old ad keys (`smartAdEnabled`, `adTimer`, `smartAdWatchSeconds`,
-`adUrl`) can be cleared from the Realtime Database with `tools/cleanup-old-data.js`.
+ad-network scripts, the admin ad configuration panel, and the dead ad-analytics widgets on the
+admin dashboard are all gone. No ad URLs or ad DOM remain in the codebase. Old ad keys
+(`smartAdEnabled`, `adTimer`, `smartAdWatchSeconds`, `adUrl`) can be cleared from the Realtime
+Database with `tools/cleanup-old-data.js`.
 
 ## Add a page
 1. Create `pages/<name>.html` (user) or `admin/pages/<name>.html` (admin); keep the root element id.

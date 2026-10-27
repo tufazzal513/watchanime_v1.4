@@ -146,7 +146,6 @@
             </div>
         </div>
     </div>
-        <!-- Old layout safely removed -->
 
         <!-- NEW: User Growth Trend Chart -->
         <div class="group bg-gray-800 p-5 rounded-xl border border-gray-700 shadow-lg mt-6 relative overflow-hidden flex flex-col hover:border-emerald-500/50 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all duration-300">
@@ -178,87 +177,4 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-6 relative z-10">
-            <!-- AD Unlocks Trend Chart (With Filter) -->
-            <div class="group bg-gray-800 p-5 rounded-xl border border-gray-700 shadow-lg hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] transition-all duration-300 transform hover:-translate-y-1 relative overflow-hidden flex flex-col">
-                <!-- Background Glow Effect -->
-                <div class="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full blur-3xl -z-10 group-hover:bg-blue-500/20 transition-all duration-500"></div>
-
-                <div class="flex items-center justify-between mb-3 relative z-20">
-                    <div class="flex items-center gap-2">
-                        <div class="bg-blue-900/50 p-2 rounded-lg text-blue-400 group-hover:text-blue-300 group-hover:animate-pulse">
-                            <i class="fas fa-chart-area"></i>
-                        </div>
-                        <p class="text-gray-200 text-sm font-bold tracking-wide">AD Unlocks Trend</p>
-                    </div>
-                    <!-- Time Filter Dropdown -->
-                    <select id="dl-chart-filter" class="bg-blue-900/30 text-blue-300 text-xs font-semibold px-3 py-1.5 rounded-lg border border-blue-500/30 focus:border-blue-500 outline-none cursor-pointer hover:bg-blue-800/40 transition-colors backdrop-blur-sm shadow-inner">
-                        <option value="7">7 Days</option>
-                        <option value="30">1 Month</option>
-                        <option value="180">6 Months</option>
-                        <option value="365">1 Year</option>
-                        <option value="730">2 Years</option>
-                        <option value="all">Lifetime</option>
-                    </select>
-                </div>
-                <div class="relative z-10 flex-1">
-                    <canvas id="dl-line-chart" height="120"></canvas>
-                </div>
-            </div>
-
-            <!-- Funnel Chart (With Filter) -->
-            <div class="group bg-gray-800 p-5 rounded-xl border border-gray-700 shadow-lg hover:border-purple-500/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)] transition-all duration-300 transform hover:-translate-y-1 relative overflow-hidden flex flex-col">
-                <!-- Background Glow Effect -->
-                <div class="absolute bottom-0 right-0 w-32 h-32 bg-purple-600/10 rounded-full blur-3xl -z-10 group-hover:bg-purple-500/20 transition-all duration-500"></div>
-
-                <div class="flex items-center justify-between mb-3 relative z-20">
-                    <div class="flex items-center gap-2">
-                        <div class="bg-purple-900/50 p-2 rounded-lg text-purple-400 group-hover:text-purple-300 group-hover:animate-pulse">
-                            <i class="fas fa-filter"></i>
-                        </div>
-                        <p class="text-gray-200 text-sm font-bold tracking-wide">Funnel (Attempts &rarr; Unlocks)</p>
-                    </div>
-                    <!-- Funnel Time Filter Dropdown -->
-                    <select id="dl-funnel-filter" class="bg-purple-900/30 text-purple-300 text-xs font-semibold px-3 py-1.5 rounded-lg border border-purple-500/30 focus:border-purple-500 outline-none cursor-pointer hover:bg-purple-800/40 transition-colors backdrop-blur-sm shadow-inner">
-                        <option value="7">7 Days</option>
-                        <option value="30">1 Month</option>
-                        <option value="180">6 Months</option>
-                        <option value="365">1 Year</option>
-                        <option value="730">2 Years</option>
-                        <option value="all">Lifetime</option>
-                    </select>
-                </div>
-                <div class="relative z-10 flex-1">
-                    <canvas id="dl-funnel-chart" height="120"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Live Activity Feed -->
-        <div class="group bg-gray-800 p-5 rounded-xl border border-gray-700 shadow-lg mt-6 relative overflow-hidden transition-all duration-300 hover:border-emerald-500/50 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]">
-            <!-- Background Glow Effect -->
-            <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-600/10 rounded-full blur-3xl -z-10 group-hover:bg-emerald-500/20 transition-all duration-500"></div>
-
-            <div class="flex items-center justify-between mb-4 relative z-20 border-b border-gray-700/50 pb-3">
-                <div class="flex items-center gap-2">
-                    <div class="bg-emerald-900/50 p-2 rounded-lg text-emerald-400 group-hover:text-emerald-300 group-hover:animate-pulse">
-                        <i class="fas fa-history"></i>
-                    </div>
-                    <h3 class="text-gray-200 text-sm font-bold tracking-wide">Live Ad Activity Feed</h3>
-                </div>
-                <!-- Updated Clear Button -->
-                <button id="dl-clear-events" class="text-[10px] bg-gray-700/80 hover:bg-gray-600 text-gray-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-gray-600 shadow-sm active:scale-95">
-                    <i class="fas fa-broom"></i> Clear Feed
-                </button>
-            </div>
-
-            <div id="dl-events-list" class="space-y-3 max-h-[350px] overflow-y-auto pr-2 relative z-10" style="scrollbar-width: thin; scrollbar-color: #4b5563 #1f2937;"></div>
-
-            <div id="dl-events-empty" class="text-center py-8 hidden relative z-10">
-                <div class="text-gray-600 text-4xl mb-3"><i class="fas fa-box-open"></i></div>
-                <p class="text-sm text-gray-400 font-medium">No recent activity visible.</p>
-                <p class="text-[10px] text-gray-500 mt-1">Waiting for new events...</p>
-            </div>
-        </div>
     </div>
-</div>
