@@ -2,7 +2,15 @@
 auth.onAuthStateChanged(async (user) => {
     if (user) {
         // ১. ইউজারের রেকর্ড আপডেট করা এবং বর্তমান স্ট্যাটাস চেক করা
-        const currentStatus = await ensureUserRecord(user);
+        let currentStatus = 'active';
+        try {
+            currentStatus = await Promise.race([
+                ensureUserRecord(user),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('User record check timed out')), 12000))
+            ]);
+        } catch (err) {
+            console.warn('[auth] user record check failed, continuing', err);
+        }
 
         // ২. যদি একাউন্ট 'deleted' থাকে, তাহলে তার Auth Account (ইমেইল/পাসওয়ার্ড) পুরোপুরি মুছে দেওয়া হবে।
         if(currentStatus === "deleted") {
@@ -68,7 +76,9 @@ auth.onAuthStateChanged(async (user) => {
         initialLoader.style.opacity = '0';
         setTimeout(() => {
             initialLoader.style.display = 'none';
-            loadInitialData();
+            // Safety net only: user-data.js owns data loading via its own auth listener.
+            try { if (typeof startDataLoad === 'function') startDataLoad(); }
+            catch (e) { console.warn('[startup] data start failed', e); }
         }, 500);
 
     } else {
