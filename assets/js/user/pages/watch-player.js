@@ -1,7 +1,7 @@
 // ===== MovieBox-style details page with the video playing inline at the top =====
 let currentSeasonKey = null;   // read by broken-link-reporter.js
 let currentEpIndex = -1;
-const PL = { mode: null, hls: null, yt: null, vimeo: null, ytTimer: null, wake: null, fake: false, url: '', playing: false, uiTimer: null, nextTimer: null, resumeAt: 0, upgraded: false, started: false, bright: 1 };
+const PL = { mode: null, hls: null, yt: null, vimeo: null, ytTimer: null, wake: null, fake: false, url: '', playing: false, uiTimer: null, nextTimer: null, resumeAt: 0, upgraded: false, started: false, bright: 1, activeSeason: null, activeEp: -1 };
 const $id = (i) => document.getElementById(i);
 const fmtT = (s) => { s = Math.max(0, s || 0); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = Math.floor(s % 60); return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); };
 const getLink = (o) => (o && (o.server1 || o.server2 || o.link)) || '';
@@ -41,7 +41,7 @@ window.showMovieDetails = (movieId, push = true) => {
     }
     const isSeries = movie.contentType === 'series' && movie.seasons && Object.keys(movie.seasons).length;
     const seasonKeys = isSeries ? Object.keys(movie.seasons) : [];
-    PL.resumeAt = 0; PL.started = false;
+    PL.resumeAt = 0; PL.started = false; PL.activeSeason = null; PL.activeEp = -1;
     currentSeasonKey = isSeries ? seasonKeys[0] : null; currentEpIndex = isSeries ? 0 : -1;
     const pr = progressMap[movieId];
     if (pr && !upcoming) {
@@ -102,7 +102,7 @@ window.showMovieDetails = (movieId, push = true) => {
         </div>
         ${isSeries ? `<div class="mv-res"><h3>Resources</h3>
           <div class="mv-sel">${seasonKeys.length > 1 ? `<select id="mv-season" onchange="selectSeason(this.value)">${seasonKeys.map(k => `<option value="${esc(k)}" ${k === currentSeasonKey ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select>` : ''}</div>
-          <div class="mv-epbar"><button class="mv-ep all" id="mv-eps-all" onclick="openAllEps()">All</button><div class="mv-eps no-scrollbar" id="mv-eps"></div></div></div>` : ''}
+          <div class="mv-eps no-scrollbar" id="mv-eps"></div></div>` : ''}
       </div>
 
       <div class="mv-side"><h3 class="mv-foryou">For you</h3>
@@ -126,24 +126,32 @@ window.showMovieDetails = (movieId, push = true) => {
 
 // ---------- episodes ----------
 window.selectSeason = (k) => { currentSeasonKey = k; renderEpRow(); };
+const epActive = (i) => i === PL.activeEp && currentSeasonKey === PL.activeSeason;
 const renderEpRow = () => {
     const movie = allMovies[currentMovieId]; const box = $id('mv-eps'); if (!box) return;
     const eps = movie.seasons[currentSeasonKey] || [];
-    const allBtn = $id('mv-eps-all');
-    if (allBtn) allBtn.style.display = eps.length ? '' : 'none';
     if (!eps.length) { box.innerHTML = '<span class="nf-empty" style="padding:8px">No episodes released yet.</span>'; return; }
-    box.innerHTML = eps.map((e, i) => `<button class="mv-ep ${i === currentEpIndex && PL.mode ? 'on' : ''}" title="${esc(e.name)}" onclick="playEpisode(${i})">${String(i + 1).padStart(2, '0')}</button>`).join('');
+    box.innerHTML = `<button class="mv-ep all" onclick="openAllEps()">All</button>` + eps.map((e, i) => `<button class="mv-ep ${epActive(i) ? 'on' : ''}" title="${esc(e.name)}" onclick="playEpisode(${i})">${String(i + 1).padStart(2, '0')}</button>`).join('');
+    // Keep the highlighted episode visible without scrolling the whole page.
+    const active = box.querySelector('.mv-ep.on');
+    if (active) {
+        const all = box.querySelector('.mv-ep.all');
+        const pad = all ? all.getBoundingClientRect().width + 8 : 0;
+        const r = active.getBoundingClientRect(), b = box.getBoundingClientRect();
+        const center = (pad + b.width) / 2;
+        box.scrollLeft = Math.max(0, box.scrollLeft + (r.left - b.left) - (center - r.width / 2));
+    }
 };
 window.openAllEps = () => {
     const movie = allMovies[currentMovieId]; const keys = Object.keys(movie.seasons || {});
-    const grid = () => (movie.seasons[currentSeasonKey] || []).map((e, i) => `<button class="mv-ep ${i === currentEpIndex ? 'on' : ''}" onclick="closeSheet();playEpisode(${i})">${String(i + 1).padStart(2, '0')}</button>`).join('');
+    const grid = () => (movie.seasons[currentSeasonKey] || []).map((e, i) => `<button class="mv-ep ${epActive(i) ? 'on' : ''}" onclick="closeSheet();playEpisode(${i})">${String(i + 1).padStart(2, '0')}</button>`).join('');
     openSheet('Episodes', `${keys.length > 1 ? `<select class="mv-sheet-sel" onchange="selectSeason(this.value);document.getElementById('mv-sheet-grid').innerHTML=window.__epGrid()">${keys.map(k => `<option ${k === currentSeasonKey ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select>` : ''}<div class="mv-sheet-grid" id="mv-sheet-grid">${grid()}</div>`);
     window.__epGrid = grid;
 };
 window.plEpsBtn = () => { if (plIsFs()) plFs(); openAllEps(); };
 window.playEpisode = (i) => {
     const movie = allMovies[currentMovieId]; const eps = movie.seasons && movie.seasons[currentSeasonKey]; if (!eps || !eps[i]) return;
-    currentEpIndex = i; PL.resumeAt = 0;
+    currentEpIndex = i; PL.resumeAt = 0; PL.activeSeason = currentSeasonKey; PL.activeEp = i;
     const pr = progressMap[currentMovieId]; if (pr && pr.season === currentSeasonKey && pr.ep === i && pr.t > 5) PL.resumeAt = pr.t;
     const sel = $id('mv-season'); if (sel) sel.value = currentSeasonKey;
     renderEpRow(); window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -196,7 +204,7 @@ const wakeOff = () => { try { if (PL.wake) PL.wake.release(); } catch (e) {} PL.
 
 window.startPlayback = () => {
     const m = allMovies[currentMovieId]; if (!m) return;
-    if (m.contentType === 'series' && m.seasons) { const e = epList()[currentEpIndex]; if (!e) return plToast('No episodes yet'); plLoad(getLink(e), e.name); renderEpRow(); }
+    if (m.contentType === 'series' && m.seasons) { const e = epList()[currentEpIndex]; if (!e) return plToast('No episodes yet'); PL.activeSeason = currentSeasonKey; PL.activeEp = currentEpIndex; plLoad(getLink(e), e.name); renderEpRow(); }
     else plLoad(getLink(m), null);
 };
 const plLoad = (url, epName) => {
