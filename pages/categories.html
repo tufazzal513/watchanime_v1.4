@@ -1,0 +1,28 @@
+<div id="categories-page" class="page p-4 relative overflow-hidden">
+    <style>
+        @keyframes popUpFade {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-pop-up {
+            animation: popUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0; 
+        }
+    </style>
+
+    <div class="flex items-center gap-3 mb-6 relative z-10">
+        <div class="w-10 h-10 rounded-full bg-cyan-600/20 flex items-center justify-center border border-cyan-500/30 shadow-lg">
+            <i class="fas fa-th-large text-cyan-400 text-lg"></i>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 tracking-wide">Explore Categories</h2>
+    </div>
+
+    <div class="ad-container mb-6 relative z-10">
+         <iframe srcdoc="<script>atOptions={'key':'aa465b71c480195a3ddce17207d3b9d7','format':'iframe','height':50,'width':320,'params':{}};</script><script src='https://www.highperformanceformat.com/aa465b71c480195a3ddce17207d3b9d7/invoke.js'></script>" width="320" height="50" scrolling="no" frameborder="0" style="border:none; overflow:hidden;"></iframe>
+    </div>
+
+    <div id="categories-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 lg:gap-5 relative z-10 pb-6"></div>
+
+    <!-- Background Glow -->
+    <div class="absolute top-[10%] left-[-10%] w-64 h-64 bg-cyan-600/10 rounded-full blur-[80px] pointer-events-none"></div>
+</div>
