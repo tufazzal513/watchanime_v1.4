@@ -10,7 +10,7 @@ movex/
 ├── index.html                      ← user app shell (splash + includes)
 ├── pages/                          ← user pages (home, search, categories, notifications,
 │                                     category-movies, profile, movie-details, comments, watch)
-├── partials/                       ← auth, header, bottom-nav, download-gate / ad / custom modals
+├── partials/                       ← auth, header, bottom-nav, custom modal
 ├── admin/
 │   ├── index.html                  ← admin shell
 │   ├── pages/                      ← dashboard, movies, all-movies, broken-links,
@@ -38,8 +38,12 @@ scripts listed in `SCRIPTS` one by one, in order. All scripts share one global s
 single file, so **order matters**. `theme-boot.js` and `splash-boot.js` stay synchronous in the user
 `index.html` (zero-delay theme/splash).
 
-`features/download-gate-handlers.js` holds two functions (`closeDlGateModal`, `startAdAttempt`) that the
-download-gate modal binds at load time; they must stay loaded before `download-gate-modal.js`.
+## Ad system removed (v1.4)
+
+The Smart Ad system was removed in v1.4: the recurring popup modal, ad timers, banner iframes,
+ad-network scripts, and the admin "Smart Ad Configuration" panel are all gone. No ad URLs or ad
+DOM remain in the codebase. Old ad keys (`smartAdEnabled`, `adTimer`, `smartAdWatchSeconds`,
+`adUrl`) can be cleared from the Realtime Database with `tools/cleanup-old-data.js`.
 
 ## Add a page
 1. Create `pages/<name>.html` (user) or `admin/pages/<name>.html` (admin); keep the root element id.

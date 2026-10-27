@@ -28,12 +28,8 @@ themeRadios.forEach(radio => {
 db.ref('settings').on('value', s => {
     const data = s.val() || {};
 
-    // Ads & Others
+    // General settings
     document.getElementById('pwd-limit-input').value = data.pwdResetLimit || '3';
-    document.getElementById('smart-ad-toggle').checked = !!data.smartAdEnabled;
-    document.getElementById('ad-timer-input').value = data.adTimer !== undefined ? data.adTimer : '0';
-    document.getElementById('ad-watch-sec-input').value = data.smartAdWatchSeconds !== undefined ? data.smartAdWatchSeconds : '0';
-    document.getElementById('ad-url-input').value = data.adUrl || '';
 
     // Theme Data
     const mode = data.themeMode || 'static';
@@ -74,25 +70,6 @@ document.getElementById('pwd-reset-form').addEventListener('submit', e => {
     } else {
         alert('Please enter a valid number greater than 0.');
     }
-});
-
-document.getElementById('ad-settings-form').addEventListener('submit', e => {
-    e.preventDefault();
-    const enabled = document.getElementById('smart-ad-toggle').checked;
-    const timerVal = document.getElementById('ad-timer-input').value;
-    const watchVal = document.getElementById('ad-watch-sec-input').value;
-    const urlVal = document.getElementById('ad-url-input').value;
-
-    const updateData = {
-        smartAdEnabled: enabled,
-        adTimer: timerVal !== '' ? parseInt(timerVal) : 0,
-        smartAdWatchSeconds: watchVal !== '' ? parseInt(watchVal) : 0,
-        adUrl: urlVal.trim() || null
-    };
-
-    db.ref('settings').update(updateData).then(() => {
-        alert('Smart Ad settings updated successfully!');
-    });
 });
 
 initEditableSocials();

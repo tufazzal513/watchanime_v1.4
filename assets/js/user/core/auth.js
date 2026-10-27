@@ -71,8 +71,6 @@ auth.onAuthStateChanged(async (user) => {
             loadInitialData();
         }, 500);
 
-        checkSmartAd();
-
     } else {
         if (userStatusRef) {
             userStatusRef.off();

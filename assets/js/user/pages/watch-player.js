@@ -48,22 +48,6 @@ window.showMovieDetails = (movieId, push = true) => {
         if (isSeries && pr.season && movie.seasons[pr.season] && movie.seasons[pr.season][pr.ep]) { currentSeasonKey = pr.season; currentEpIndex = pr.ep; }
         if (pr.t > 5) PL.resumeAt = pr.t;
     }
-    // AD LOCATION 2: Preserved Exactly
-    const adHtml = `
-        <div class="ad-container my-4 relative z-10 animate-slide-up" style="animation-delay: 0.1s;">
-             <iframe srcdoc="<script>
-                  atOptions = {
-                    'key' : 'aa465b71c480195a3ddce17207d3b9d7',
-                    'format' : 'iframe',
-                    'height' : 50,
-                    'width' : 320,
-                    'params' : {}
-                  };
-                <\/script>
-                <script src='https://www.highperformanceformat.com/aa465b71c480195a3ddce17207d3b9d7/invoke.js'><\/script>"
-                width="320" height="50" scrolling="no" frameborder="0" style="border:none; overflow:hidden;"></iframe>
-        </div>
-    `;
     const cover = movie.coverUrl || movie.posterUrl || '';
     const similar = Object.entries(allMovies).filter(([id, m]) => id !== movieId && (!m.isUpcoming || new Date(m.releaseDate) <= now))
         .map(([id, m]) => [id, m, (m.category && m.category === movie.category ? 2 : 0) + (m.contentType === movie.contentType ? 1 : 0)])
@@ -116,7 +100,6 @@ window.showMovieDetails = (movieId, push = true) => {
           <button class="mv-pill" data-mylist="${movieId}" onclick="toggleMyList('${movieId}')"><i class="fas fa-plus"></i> <span class="lbl">Add to list</span></button>
           <button class="mv-pill" onclick="openShare()"><i class="fas fa-share-alt"></i> Share</button>
         </div>
-        ${adHtml}
         ${isSeries ? `<div class="mv-res"><h3>Resources</h3>
           <div class="mv-sel">${seasonKeys.length > 1 ? `<select id="mv-season" onchange="selectSeason(this.value)">${seasonKeys.map(k => `<option value="${esc(k)}" ${k === currentSeasonKey ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select>` : ''}</div>
           <div class="mv-eps no-scrollbar" id="mv-eps"></div></div>` : ''}

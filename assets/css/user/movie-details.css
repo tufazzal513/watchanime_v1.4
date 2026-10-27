@@ -1,6 +1,3 @@
-/* AD Container Helper */
-.ad-container { display: flex; justify-content: center; align-items: center; margin: 10px 0; overflow: hidden; min-height: 50px; }
-
 /* Movie Details & Episode List Styles */
 @keyframes slowPan {
     0% { transform: scale(1.05) translateY(0); }

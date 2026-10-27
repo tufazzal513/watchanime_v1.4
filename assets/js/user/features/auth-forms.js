@@ -142,11 +142,7 @@ forgotForm.addEventListener('submit', async (e) => {
     }
 });
 
-
-
 window.handleLogout = () => {
-    clearTimeout(smartAdTimerId); // লগআউট করলে এডের টাইমার বন্ধ করা হলো
-    document.getElementById('ad-modal').classList.remove('visible');
     auth.signOut();
     localStorage.removeItem('last_page_id');
     localStorage.removeItem('last_movie_id');

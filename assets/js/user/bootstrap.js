@@ -18,7 +18,6 @@
       "core/state.js",
       "core/utils.js",
       "core/error-logger.js",
-      "features/smart-ads.js",
       "core/carousel-state.js",
       "core/presence.js",
       "core/user-record.js",

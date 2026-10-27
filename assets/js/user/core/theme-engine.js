@@ -18,20 +18,8 @@ let themeAutoInterval;
 db.ref('settings').on('value', s => {
     const d = s.val() || {};
 
-    // Ads & Others Configuration
+    // Global app configuration
     pwdResetLimit = parseInt(d.pwdResetLimit ?? 3, 10) || 3;
-    smartAdCfg.enabled = !!d.smartAdEnabled;
-    smartAdCfg.interval = parseInt(d.adTimer ?? 0, 10) || 0;
-    smartAdCfg.watchSeconds = parseInt(d.smartAdWatchSeconds ?? 0, 10) || 0;
-    smartAdCfg.url = d.adUrl || "";
-
-    if (smartAdCfg.enabled) {
-        startSmartAdTimer();
-    } else {
-        clearTimeout(smartAdTimerId);
-        const adModal = document.getElementById('ad-modal');
-        if(adModal) adModal.classList.remove('visible');
-    }
 
     // --- PREMIUM DYNAMIC THEME ENGINE ---
     const mode = d.themeMode || 'static';
