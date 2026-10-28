@@ -75,6 +75,46 @@
           ".validate": "newData.isNumber()"
         }
       }
+    },
+    "stats": {
+      ".read": "auth != null",
+      ".write": "root.child('settings/adminUIDs/'+auth.uid).exists()",
+      "$id": {
+        "plays": {
+          ".write": "auth != null",
+          ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
+        },
+        "lists": {
+          ".write": "auth != null",
+          ".validate": "newData.isNumber() && newData.val() >= 0 && (newData.val() === (data.exists() ? data.val() : 0) + 1 || newData.val() === (data.exists() ? data.val() : 0) - 1)"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "searchStats": {
+      ".read": "auth != null",
+      ".write": "root.child('settings/adminUIDs/'+auth.uid).exists()",
+      ".indexOn": [
+        "c"
+      ],
+      "$key": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['t','c','at'])",
+        "t": {
+          ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 40"
+        },
+        "c": {
+          ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
+        },
+        "at": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
     }
   }
 }

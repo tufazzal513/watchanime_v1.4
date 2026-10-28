@@ -142,6 +142,8 @@ forgotForm.addEventListener('submit', async (e) => {
     }
 });
 
+
+
 window.handleLogout = () => {
     auth.signOut();
     localStorage.removeItem('last_page_id');

@@ -1,5 +1,4 @@
 // --- HERO BANNER SLIDER (replaces 3D carousel) ---
-const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let heroTimer;
 const renderBanners = (banners) => {
     carouselEl = document.getElementById('carousel');

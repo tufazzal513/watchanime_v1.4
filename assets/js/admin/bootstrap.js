@@ -13,6 +13,7 @@
 
   var SCRIPTS = [
       "../shared/firebase-config.js",
+      "../shared/taxonomy.js",
       "core/firebase-init.js",
       "core/error-logger.js",
       "core/state.js",
@@ -24,7 +25,7 @@
       "pages/movie-form.js",
       "pages/broken-links.js",
       "pages/movie-actions.js",
-      "pages/categories.js",
+      "pages/classification.js",
       "pages/banners.js",
       "pages/settings.js",
       "pages/users.js",

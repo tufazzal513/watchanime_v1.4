@@ -153,16 +153,41 @@
                 </div>
             </div>
 
-            <!-- Category & Cast -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-gray-300 text-sm font-semibold mb-2 tracking-wide"><i class="fas fa-tags text-cyan-400 mr-2 text-xs"></i>Category</label>
-                    <select id="movie-category" class="w-full bg-gray-900/50 text-white p-3.5 rounded-xl border border-gray-700 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all cursor-pointer shadow-inner appearance-none" required></select>
+            <!-- Classification -->
+            <div class="rounded-2xl border border-gray-700 bg-gray-900/30 p-4 space-y-4" id="mx-classification">
+                <h4 class="text-sm font-bold text-cyan-400 uppercase tracking-widest"><i class="fas fa-tags mr-2"></i>Classification</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-300 text-sm font-semibold mb-2">Type</label>
+                        <select id="movie-type" class="w-full bg-gray-900/50 text-white p-3 rounded-xl border border-gray-700 outline-none"></select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 text-sm font-semibold mb-2">Industry / Country</label>
+                        <select id="movie-industry" class="w-full bg-gray-900/50 text-white p-3 rounded-xl border border-gray-700 outline-none"></select>
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-gray-300 text-sm font-semibold mb-2 tracking-wide"><i class="fas fa-users text-orange-400 mr-2 text-xs"></i>Cast / Crew</label>
-                    <textarea id="movie-cast" rows="3" class="w-full bg-gray-900/50 text-white p-3.5 rounded-xl border border-gray-700 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all placeholder-gray-600 resize-y shadow-inner" placeholder="E.g. Actor 1&#10;Actor 2&#10;(Line breaks supported)"></textarea>
+                    <label class="block text-gray-300 text-sm font-semibold mb-2">Language (audio)</label>
+                    <div id="mx-langs" class="flex flex-wrap gap-2"></div>
+                    <label class="inline-flex items-center gap-2 mt-3 text-sm text-gray-300 cursor-pointer"><input type="checkbox" id="movie-dubbed"> Dubbed version</label>
                 </div>
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-gray-300 text-sm font-semibold">Genres <span class="text-xs text-gray-500">(pick one or more)</span></label>
+                        <button type="button" id="mx-gclear" class="text-xs text-gray-400 hover:text-white">Clear</button>
+                    </div>
+                    <div id="mx-gsel" class="flex flex-wrap gap-2 mb-2"></div>
+                    <p class="text-[11px] text-gray-500 mb-1">Popular</p>
+                    <div id="mx-gpop" class="flex flex-wrap gap-2 mb-3"></div>
+                    <input id="mx-gsearch" type="text" autocomplete="off" placeholder="Search genres… (Enter adds the first match)" class="w-full bg-gray-900/50 text-white p-3 rounded-xl border border-gray-700 outline-none mb-2">
+                    <div id="mx-glist" class="mx-glist"></div>
+                </div>
+            </div>
+
+            <!-- Cast -->
+            <div>
+                <label class="block text-gray-300 text-sm font-semibold mb-2 tracking-wide"><i class="fas fa-users text-orange-400 mr-2 text-xs"></i>Cast / Crew</label>
+                <textarea id="movie-cast" rows="3" class="w-full bg-gray-900/50 text-white p-3.5 rounded-xl border border-gray-700 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all placeholder-gray-600 resize-y shadow-inner" placeholder="Actor names, director..."></textarea>
             </div>
 
             <!-- Description -->

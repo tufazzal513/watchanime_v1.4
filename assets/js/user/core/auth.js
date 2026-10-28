@@ -81,6 +81,7 @@ auth.onAuthStateChanged(async (user) => {
             catch (e) { console.warn('[startup] data start failed', e); }
         }, 500);
 
+
     } else {
         if (userStatusRef) {
             userStatusRef.off();
@@ -132,6 +133,7 @@ window.onpopstate = (event) => {
 };
 
 const showPage = (pageId, pushToHistory = true) => {
+    if (typeof closeSheet === 'function') closeSheet();
     pages.forEach(page => page.classList.toggle('active', page.id === pageId));
     navBtns.forEach(btn => {
         btn.classList.toggle('text-blue-500', btn.dataset.page === pageId);
@@ -139,27 +141,13 @@ const showPage = (pageId, pushToHistory = true) => {
     });
 
     // Handle Global App Bar visibility based on active page
-    const hideHeaderPages = ['movie-details-page', 'category-movies-page'];
+    const hideHeaderPages = ['movie-details-page', 'category-movies-page', 'search-page'];
     toggleGlobalHeader(!hideHeaderPages.includes(pageId));
 
     localStorage.setItem('last_page_id', pageId);
     if (pushToHistory) history.pushState({ page: pageId }, null, "");
 
-    const searchSuggestions = document.getElementById('search-suggestions');
-    if(pageId !== 'search-page' && searchSuggestions) searchSuggestions.classList.add('hidden');
-
-    if(pageId === 'search-page') {
-        // search.js may still be loading: never let this navigation abort startup.
-        try { if (typeof renderSearchHistory === 'function') renderSearchHistory(); } catch (e) {}
-        const searchField = document.getElementById('search-input');
-        const searchResults = document.getElementById('search-results');
-        const searchClear = document.getElementById('search-clear-btn');
-        if (searchField) searchField.value = '';
-        if (searchResults) searchResults.innerHTML = '';
-        if (searchClear) searchClear.classList.add('hidden');
-        if (searchSuggestions) searchSuggestions.classList.add('hidden');
-        try { if (typeof renderTopSearches === 'function') renderTopSearches(); } catch (e) {}
-    }
+    if (pageId === 'search-page' && typeof resetSearchPage === 'function') resetSearchPage();
 };
 
 window.goBack = () => history.back();

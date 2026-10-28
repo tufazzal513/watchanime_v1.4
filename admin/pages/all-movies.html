@@ -33,8 +33,11 @@
 
             <div class="flex gap-2">
                 <select id="category-filter" class="bg-gray-700 text-white text-xs font-semibold px-4 py-2 rounded-full border border-gray-600 focus:border-blue-500 outline-none shadow-sm cursor-pointer hover:bg-gray-600 transition-colors" onchange="filterMovies('category', this.value)">
-                    <option value="all">All Categories</option>
+                    <option value="all">All Genres</option>
                 </select>
+
+                <select id="industry-filter" onchange="filterMovies('industry', this.value)" class="bg-gray-700 text-white text-xs font-semibold px-4 py-2 rounded-full border border-gray-600 outline-none shadow-sm cursor-pointer"><option value="all">All Industries</option></select>
+                <select id="lang-filter" onchange="filterMovies('lang', this.value)" class="bg-gray-700 text-white text-xs font-semibold px-4 py-2 rounded-full border border-gray-600 outline-none shadow-sm cursor-pointer"><option value="all">All Languages</option></select>
 
                 <select id="year-filter" class="bg-gray-700 text-white text-xs font-semibold px-4 py-2 rounded-full border border-gray-600 focus:border-blue-500 outline-none shadow-sm cursor-pointer hover:bg-gray-600 transition-colors" onchange="filterMovies('year', this.value)">
                     <option value="all">All Years</option>
@@ -58,7 +61,7 @@
                         <th class="p-4 whitespace-nowrap">Title</th>
                         <th class="p-4 whitespace-nowrap">Type</th>
                         <th class="p-4 whitespace-nowrap">Status</th>
-                        <th class="p-4 whitespace-nowrap">Category</th>
+                        <th class="p-4 whitespace-nowrap">Type / Genres</th>
                         <th class="p-4 whitespace-nowrap">Year</th>
                         <th class="p-4 whitespace-nowrap text-right">Actions</th>
                     </tr>

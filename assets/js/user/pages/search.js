@@ -1,401 +1,196 @@
-// --- ADVANCED SEARCH WITH SUGGESTIONS ------------------------------------
-// Works with cached first paint and delayed Firebase data: the data layer
-// dispatches "movex:movies-updated" whenever the movie catalogue changes.
-// -------------------------------------------------------------------------
-(function () {
-    'use strict';
+// --- SEARCH: MovieBox-style (recent, everyone is searching, hot lists, tabs, list results, voice) ---
+const searchInput = document.getElementById('search-input');
+const searchClearBtn = document.getElementById('search-clear-btn');
+const searchGoBtn = document.getElementById('search-go-btn');
+const suggestionsDiv = document.getElementById('search-suggestions');
+let searchTimeout, searchTab = 'all', lastResults = [], lastTerm = '', popularTerms = [], recentOpen = false, hotTab = 'movies';
 
-    const searchInput = document.getElementById('search-input');
-    const searchClearBtn = document.getElementById('search-clear-btn');
-    const suggestionsDiv = document.getElementById('search-suggestions');
-    const historyContainer = document.getElementById('search-history-container');
-    const historyChips = document.getElementById('search-history-chips');
-    const resultsDiv = document.getElementById('search-results');
-    const topBox = document.getElementById('top-searches');
-    const searchPageEl = document.getElementById('search-page');
-    const escapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-    let searchTimeout;
-
-    const searchEsc = (value) => String(value == null ? '' : value)
-        .replace(/[&<>"']/g, (c) => escapeMap[c]);
-
-    const safePoster = (m) => {
-        const url = String((m && (m.posterUrl || m.coverUrl)) || '').trim();
-        if (!url || /^(javascript|vbscript|file):/i.test(url) || /^data:(?!image\/)/i.test(url)) return '';
-        return url;
-    };
-
-    const movies = () => (typeof allMovies !== 'undefined' && allMovies && typeof allMovies === 'object')
-        ? allMovies : {};
-
-    const releaseMs = (m) => {
-        if (!m) return 0;
-        if (typeof getReleaseMs === 'function') {
-            try { return getReleaseMs(m) || 0; } catch (e) {}
-        }
-        if (typeof m.releaseTs === 'number') return m.releaseTs;
-        if (m.releaseDate) {
-            const t = Date.parse(m.releaseDate);
-            return isNaN(t) ? 0 : t;
-        }
-        return 0;
-    };
-
-    const isReleased = (m, now) => {
-        if (!m) return false;
-        const ms = releaseMs(m);
-        return !m.isUpcoming || (ms > 0 && ms <= now);
-    };
-
-    function getSearchHistory() {
-        try {
-            if (typeof searchHistory === 'undefined' || !Array.isArray(searchHistory)) return [];
-            return searchHistory
-                .filter((t) => typeof t === 'string' && t.trim())
-                .map((t) => t.trim())
-                .slice(0, 6);
-        } catch (e) { return []; }
-    }
-
-    function setSearchHistory(list) {
-        const clean = list.slice(0, 6);
-        try { searchHistory = clean; } catch (e) {}
-        try { localStorage.setItem('movex_search_history', JSON.stringify(clean)); } catch (e) {}
-    }
-
-    function hideSuggestions() {
-        if (suggestionsDiv) {
-            suggestionsDiv.classList.add('hidden');
-            suggestionsDiv.innerHTML = '';
-        }
-    }
-
-    function renderSearchHistory() {
-        if (!historyChips || !historyContainer) return;
-        const list = getSearchHistory();
-        historyChips.innerHTML = '';
-        if (!list.length) {
-            historyContainer.classList.add('hidden');
-            return;
-        }
-        historyContainer.classList.remove('hidden');
-        list.forEach((term) => {
-            const chip = document.createElement('button');
-            chip.type = 'button';
-            chip.className = 'search-chip px-4 py-1.5 rounded-full text-xs font-medium text-gray-300 cursor-pointer flex items-center gap-2';
-            chip.innerHTML = '<i class="fas fa-search text-[10px] text-gray-500"></i><span></span>';
-            chip.querySelector('span').textContent = term;
-            chip.addEventListener('click', () => {
-                if (searchInput) searchInput.value = term;
-                if (searchClearBtn) searchClearBtn.classList.remove('hidden');
-                hideSuggestions();
-                performSearch(term);
-                renderTopSearches();
-            });
-            historyChips.appendChild(chip);
-        });
-    }
-
-    function addToHistory(term) {
-        const clean = String(term || '').trim();
-        if (!clean) return;
-        const list = getSearchHistory().filter((t) => t.toLowerCase() !== clean.toLowerCase());
-        list.unshift(clean);
-        setSearchHistory(list);
-        renderSearchHistory();
-    }
-
-    function clearSearchHistory() {
-        setSearchHistory([]);
-        try { localStorage.removeItem('movex_search_history'); } catch (e) {}
-        renderSearchHistory();
-        renderTopSearches();
-    }
-
-    function matchMovie(m, terms, currentYear) {
-        if (!m) return false;
-        const textToSearch = `${m.title || ''} ${m.cast || ''} ${m.category || ''} ${m.year || ''}`.toLowerCase();
-        return terms.every((t) => {
-            if ((t === 'new' || t === 'latest') && parseInt(m.year, 10) === currentYear) return true;
-            if ((t === 'trending' || t === 'popular') && parseFloat(m.rating) >= 7.0) return true;
-            return textToSearch.includes(t);
-        });
-    }
-
-    function openMovie(id, options) {
-        const opts = options || {};
-        const m = movies()[id];
-        const title = opts.title || (m && m.title) || '';
-        if (opts.addHistory) addToHistory(title);
-        hideSuggestions();
-        if (opts.clearInput && searchInput) {
-            searchInput.value = '';
-            if (searchClearBtn) searchClearBtn.classList.add('hidden');
-            if (resultsDiv) resultsDiv.innerHTML = '';
-            renderTopSearches();
-        }
-        if (typeof showMovieDetails === 'function') {
-            try { showMovieDetails(id); }
-            catch (e) { console.warn('[search] could not open title', e); }
-        }
-    }
-
-    function showSuggestions(term) {
-        if (!suggestionsDiv) return;
-        const q = String(term || '').trim();
-        if (!q) { hideSuggestions(); return; }
-
-        const now = Date.now();
-        const currentYear = new Date(now).getFullYear();
-        const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
-        const results = Object.entries(movies())
-            .filter(([, m]) => isReleased(m, now) && matchMovie(m, terms, currentYear))
-            .slice(0, 5);
-
-        if (!results.length) { hideSuggestions(); return; }
-
-        suggestionsDiv.innerHTML = results.map(([id, m]) => {
-            const poster = safePoster(m);
-            const image = poster
-                ? `<img src="${searchEsc(poster)}" alt="" loading="lazy">`
-                : '<span class="suggestion-noimg"><i class="fas fa-film"></i></span>';
-            const rating = m.rating || 'N/A';
-            const category = m.category || 'Movie';
-            return `
-                <div class="suggestion-item" role="button" tabindex="0" data-movie-id="${searchEsc(id)}">
-                    ${image}
-                    <div class="suggestion-info">
-                        <div class="suggestion-title">${searchEsc(m.title || 'Untitled')}</div>
-                        <div class="suggestion-meta">
-                            <span class="bg-indigo-600/20 text-indigo-300 px-1.5 py-0.5 rounded text-[9px] font-bold">${searchEsc(m.year || 'N/A')}</span>
-                            <span>&bull; ${searchEsc(category)}</span>
-                            <span class="flex items-center text-yellow-500"><i class="fas fa-star text-[9px] mr-1"></i> ${searchEsc(rating)}</span>
-                        </div>
-                    </div>
-                </div>`;
-        }).join('');
-        suggestionsDiv.classList.remove('hidden');
-    }
-
-    function performSearch(term) {
-        if (!resultsDiv) return;
-        const q = String(term || '').trim();
-        if (historyContainer) historyContainer.classList.add('hidden');
-        renderTopSearches();
-
-        if (!q) {
-            resultsDiv.innerHTML = '';
-            renderSearchHistory();
-            hideSuggestions();
-            return;
-        }
-
-        const catalogue = movies();
-        if (!Object.keys(catalogue).length) {
-            resultsDiv.innerHTML = `
-                <div class="col-span-full search-state">
-                    <i class="fas fa-circle-notch fa-spin"></i>
-                    <p>Loading titles&hellip;</p>
-                    <span>Search will update automatically when content is ready.</span>
-                </div>`;
-            return;
-        }
-
-        const now = Date.now();
-        const currentYear = new Date(now).getFullYear();
-        const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
-        const results = Object.entries(catalogue)
-            .filter(([, m]) => isReleased(m, now) && matchMovie(m, terms, currentYear));
-
-        if (terms.includes('new') || terms.includes('latest')) {
-            results.sort((a, b) => (parseInt(b[1].year, 10) || 0) - (parseInt(a[1].year, 10) || 0));
-        }
-
-        if (!results.length) {
-            resultsDiv.innerHTML = `
-                <div class="col-span-full search-state">
-                    <i class="fas fa-search"></i>
-                    <p>No results found</p>
-                    <span>Try searching with different keywords.</span>
-                </div>`;
-            return;
-        }
-
-        resultsDiv.innerHTML = results.map(([id, m], index) => {
-            const poster = safePoster(m);
-            const image = poster
-                ? `<img src="${searchEsc(poster)}" alt="${searchEsc(m.title || '')}" loading="lazy" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">`
-                : '<div class="search-poster-fallback"><i class="fas fa-film"></i></div>';
-            const typeLabel = m.contentType === 'series'
-                ? '<span class="absolute top-2 right-2 bg-purple-600/90 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow border border-white/20">SERIES</span>'
-                : '';
-            const delay = Math.min(index, 12) * 0.04;
-            return `
-                <div class="animate-pop-up cursor-pointer group relative" role="button" tabindex="0" data-movie-id="${searchEsc(id)}" style="animation-delay: ${delay}s;">
-                    <div class="relative overflow-hidden rounded-xl shadow-lg border border-slate-700/50 bg-slate-800 aspect-[2/3]">
-                        ${image}
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
-                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <div class="w-12 h-12 bg-indigo-600/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(79,70,229,0.6)] transform scale-75 group-hover:scale-100 transition-transform">
-                                <i class="fas fa-play text-white ml-1"></i>
-                            </div>
-                        </div>
-                        ${typeLabel}
-                    </div>
-                    <div class="mt-2.5 px-1">
-                        <p class="text-sm text-gray-200 font-bold truncate group-hover:text-indigo-400 transition-colors">${searchEsc(m.title || 'Untitled')}</p>
-                        <div class="flex items-center justify-between mt-0.5">
-                            <p class="text-[10px] text-gray-500 truncate mr-2">${searchEsc(m.year || 'N/A')} &bull; ${searchEsc(m.category || 'Movie')}</p>
-                            <p class="text-[10px] text-gray-400 font-medium flex items-center flex-shrink-0"><i class="fas fa-star text-yellow-500 text-[8px] mr-1"></i> ${searchEsc(m.rating || 'N/A')}</p>
-                        </div>
-                    </div>
-                </div>`;
-        }).join('');
-    }
-
-    // --- TOP SEARCHES: a compact, ranked Top 5 instead of a long 10-row list.
-    function renderTopSearches() {
-        if (!topBox || !searchInput) return;
-        if (searchInput.value.trim()) { topBox.classList.add('hidden'); return; }
-
-        const now = Date.now();
-        const list = Object.entries(movies())
-            .filter(([, m]) => isReleased(m, now))
-            .sort((a, b) => {
-                const diff = (parseFloat(b[1].rating) || 0) - (parseFloat(a[1].rating) || 0);
-                return diff || String(a[1].title || '').localeCompare(String(b[1].title || ''));
-            })
-            .slice(0, 5);
-
-        if (!list.length) {
-            topBox.innerHTML = '';
-            topBox.classList.add('hidden');
-            return;
-        }
-
-        topBox.innerHTML = `
-            <section class="top-searches-panel" aria-labelledby="top-searches-heading">
-                <div class="ts-head">
-                    <h3 id="top-searches-heading" class="ts-heading">Top Searches</h3>
-                    <span class="ts-kicker">Top ${list.length}</span>
-                </div>
-                <div class="ts-grid">
-                    ${list.map(([id, m], index) => {
-                        const poster = safePoster(m);
-                        const image = poster
-                            ? `<img src="${searchEsc(poster)}" alt="" loading="lazy">`
-                            : '<span class="ts-fallback"><i class="fas fa-film"></i></span>';
-                        const rank = String(index + 1).padStart(2, '0');
-                        const series = m.contentType === 'series' ? '<span class="ts-series">SERIES</span>' : '';
-                        return `
-                            <button type="button" class="ts-card" data-movie-id="${searchEsc(id)}" aria-label="Open ${searchEsc(m.title || 'title')}">
-                                <span class="ts-thumb">
-                                    ${image}
-                                    <span class="ts-rank">${rank}</span>
-                                    <span class="ts-play"><i class="fas fa-play"></i></span>
-                                </span>
-                                <span class="ts-info">
-                                    <span class="ts-name">${searchEsc(m.title || 'Untitled')}</span>
-                                    <span class="ts-meta">${searchEsc(m.year || 'N/A')} &bull; <i class="fas fa-star"></i> ${searchEsc(m.rating || 'N/A')}</span>
-                                    ${series}
-                                </span>
-                            </button>`;
-                    }).join('')}
-                </div>
-            </section>`;
-        topBox.classList.remove('hidden');
-    }
-
-    // Event delegation keeps IDs/titles out of inline onclick strings.
-    function bindOpenOnClick(el, options) {
-        if (!el) return;
-        el.addEventListener('click', (e) => {
-            const item = e.target.closest('[data-movie-id]');
-            if (!item) return;
-            openMovie(item.dataset.movieId, options);
-        });
-        el.addEventListener('keydown', (e) => {
-            if (e.key !== 'Enter' && e.key !== ' ') return;
-            const item = e.target.closest('[data-movie-id]');
-            if (!item) return;
-            e.preventDefault();
-            openMovie(item.dataset.movieId, options);
-        });
-    }
-
-    bindOpenOnClick(topBox, { addHistory: false });
-    bindOpenOnClick(resultsDiv, { addHistory: true });
-    bindOpenOnClick(suggestionsDiv, { addHistory: true, clearInput: true });
-
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            const term = e.target.value;
-            if (searchClearBtn) searchClearBtn.classList.toggle('hidden', !term.length);
-            renderTopSearches();
-
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                if (!term.trim()) {
-                    if (resultsDiv) resultsDiv.innerHTML = '';
-                    hideSuggestions();
-                    renderSearchHistory();
-                    renderTopSearches();
-                    return;
-                }
-                showSuggestions(term);
-                performSearch(term);
-            }, 300);
-        });
-        searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') hideSuggestions();
-        });
-    }
-
-    if (searchClearBtn) {
-        searchClearBtn.addEventListener('click', () => {
-            clearTimeout(searchTimeout);
-            if (searchInput) searchInput.value = '';
-            searchClearBtn.classList.add('hidden');
-            if (resultsDiv) resultsDiv.innerHTML = '';
-            hideSuggestions();
-            renderSearchHistory();
-            renderTopSearches();
-            if (searchInput) searchInput.focus();
-        });
-    }
-
-    document.addEventListener('click', (e) => {
-        if (!searchInput || !suggestionsDiv) return;
-        if (!searchInput.contains(e.target) && !suggestionsDiv.contains(e.target)) hideSuggestions();
+const termsOf = (s) => s.toLowerCase().split(/\s+/).filter(Boolean);
+const hay = (m) => `${m.title} ${m.cast || ''} ${MX.genresOf(m).join(' ')} ${m.industry || ''} ${MX.langsOf(m).join(' ')} ${MX.typeOf(m)} ${m.year || ''}`.toLowerCase();
+function matchMovie(m, terms, currentYear) {
+    const text = hay(m);
+    return terms.every(t => {
+        if ((t === 'new' || t === 'latest') && parseInt(m.year) === currentYear) return true;
+        if ((t === 'trending' || t === 'popular' || t === 'hot') && MX.ratingNum(m) >= 7) return true;
+        return text.includes(t);
     });
+}
+const searchPool = (term) => {
+    const terms = termsOf(term), y = new Date().getFullYear(), lt = term.toLowerCase().trim();
+    const score = (m) => { const t = String(m.title).toLowerCase(); return t === lt ? 3 : t.startsWith(lt) ? 2 : t.includes(lt) ? 1 : 0; };
+    return mxList().filter(([_, m]) => matchMovie(m, terms, y))
+        .sort((a, b) => score(b[1]) - score(a[1]) || mxHot(b[0], b[1]) - mxHot(a[0], a[1]));
+};
+const hl = (text, terms) => {
+    let out = esc(text);
+    terms.filter(t => t.length > 1).forEach(t => { out = out.replace(new RegExp('(' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig'), '<mark>$1</mark>'); });
+    return out;
+};
 
-    // Cached first paint and Firebase movie snapshots refresh search in place.
-    window.addEventListener('movex:movies-updated', () => {
-        renderTopSearches();
-        const q = searchInput && searchInput.value.trim();
-        if (q) performSearch(q);
-    });
+// ---------- empty state ----------
+function renderSearchHistory() {
+    document.getElementById('search-home').classList.remove('hidden');
+    document.getElementById('search-view').classList.add('hidden');
+    suggestionsDiv.classList.add('hidden');
+    const box = document.getElementById('search-history-container'), chips = document.getElementById('search-history-chips');
+    box.classList.toggle('hidden', !searchHistory.length);
+    chips.innerHTML = searchHistory.map(t => `<button class="sr-chip" data-term="${esc(t)}">${esc(t)}</button>`).join('');
+    chips.classList.toggle('sr-collapsed', !recentOpen);
+    const more = document.getElementById('sr-more');
+    more.classList.toggle('hidden', searchHistory.length < 4);
+    more.querySelector('i').className = 'fas fa-chevron-' + (recentOpen ? 'up' : 'down');
+    renderPopular(); renderHot();
+}
+window.toggleRecent = () => { recentOpen = !recentOpen; renderSearchHistory(); };
+function addToHistory(term) {
+    if (!term.trim()) return;
+    searchHistory = searchHistory.filter(t => t.toLowerCase() !== term.toLowerCase());
+    searchHistory.unshift(term);
+    if (searchHistory.length > 12) searchHistory.pop();
+    localStorage.setItem('movex_search_history', JSON.stringify(searchHistory));
+}
+window.clearSearchHistory = function () { searchHistory = []; localStorage.removeItem('movex_search_history'); renderSearchHistory(); };
 
-    if (searchPageEl && typeof MutationObserver !== 'undefined') {
-        new MutationObserver(() => {
-            if (searchPageEl.classList.contains('active')) {
-                renderSearchHistory();
-                renderTopSearches();
-            } else {
-                hideSuggestions();
-            }
-        }).observe(searchPageEl, { attributes: true, attributeFilter: ['class'] });
+// "Everyone is searching": real searches from all users (falls back to the hottest titles until data exists)
+function renderPopular() {
+    const box = document.getElementById('search-popular'), chips = document.getElementById('search-popular-chips');
+    let list = popularTerms.slice(0, 5);
+    if (!list.length) list = mxSortHot(mxList()).slice(0, 5).map(e => e[1].title);
+    box.classList.toggle('hidden', !list.length);
+    chips.innerHTML = list.map(t => `<button class="sr-chip" data-term="${esc(t)}">${esc(t)}</button>`).join('');
+}
+function loadPopular() {
+    try {
+        db.ref('searchStats').orderByChild('c').limitToLast(12).once('value', s => {
+            const v = s.val() || {};
+            popularTerms = Object.values(v).sort((a, b) => (b.c || 0) - (a.c || 0)).map(x => x.t).filter(Boolean);
+            renderPopular();
+        }, () => {});
+    } catch (e) {}
+}
+const termKey = (t) => t.toLowerCase().trim().replace(/\s+/g, ' ').replace(/[.#$\[\]\/]/g, '_').slice(0, 40);
+function logSearchTerm(term, count) {
+    const t = term.trim();
+    if (!count || t.length < 2 || t.length > 40 || !auth.currentUser) return;
+    const key = termKey(t), seen = sessionStorage.getItem('sq_' + key);
+    if (seen) return; sessionStorage.setItem('sq_' + key, '1');
+    try { db.ref('searchStats/' + key).transaction(cur => ({ t: (cur && cur.t) || t.toLowerCase(), c: ((cur && cur.c) || 0) + 1, at: Date.now() })); } catch (e) {}
+}
+
+// Hot lists (ranked 1-5)
+window.setHotTab = (h) => { hotTab = h; renderHot(); };
+function renderHot() {
+    document.querySelectorAll('#hot-tabs button').forEach(b => b.classList.toggle('on', b.dataset.h === hotTab));
+    const list = mxSortHot(mxList().filter(([_, m]) => mxInTab(m, hotTab))).slice(0, 5);
+    document.getElementById('top-searches').innerHTML = list.length ? list.map(([id, m], i) => `
+        <div class="sr-row" onclick="selectSuggestion('${id}', '')">
+            <div class="sr-poster" ${mxT(m)}>${mxImg(m)}<span class="sr-rank r${i + 1}">${i + 1}</span></div>
+            <div class="sr-info"><p class="sr-title">${esc(m.title)}</p>${mxMeta(m)}</div>
+        </div>`).join('') : '<p class="nf-empty">Nothing here yet.</p>';
+}
+
+// ---------- suggestions while typing ----------
+function showSuggestions(term) {
+    if (!term.trim()) { suggestionsDiv.classList.add('hidden'); return; }
+    const lt = term.toLowerCase();
+    const phrases = popularTerms.filter(p => p.toLowerCase().includes(lt) && p.toLowerCase() !== lt).slice(0, 3);
+    const titles = searchPool(term).slice(0, 5);
+    if (!phrases.length && !titles.length) { suggestionsDiv.classList.add('hidden'); return; }
+    suggestionsDiv.innerHTML =
+        phrases.map(p => `<div class="sr-sp" data-term="${esc(p)}"><i class="fas fa-search"></i><span>${hl(p, termsOf(term))}</span></div>`).join('') +
+        titles.map(([id, m]) => `<div class="sr-srow" onclick="selectSuggestion('${id}', '')"><div class="sr-sposter" ${mxT(m)}>${mxImg(m)}</div><div><div class="sr-st">${hl(m.title, termsOf(term))}</div>${mxMeta(m, false)}</div></div>`).join('');
+    suggestionsDiv.classList.remove('hidden');
+}
+window.selectSuggestion = (id, title) => {
+    if (title) addToHistory(title); else if (lastTerm) addToHistory(lastTerm);
+    showMovieDetails(id);
+    suggestionsDiv.classList.add('hidden');
+};
+window.clickSearchResult = (id, title) => { addToHistory(title); showMovieDetails(id); };
+
+// ---------- committed search: tabs + list ----------
+function commitSearch(term) {
+    term = (term || '').trim();
+    if (!term) return;
+    searchInput.value = term; lastTerm = term;
+    searchClearBtn.classList.remove('hidden'); searchGoBtn.classList.add('hidden');
+    suggestionsDiv.classList.add('hidden'); searchInput.blur();
+    addToHistory(term);
+    searchTab = 'all';
+    lastResults = searchPool(term);
+    logSearchTerm(term, lastResults.length);
+    renderSearchResults();
+}
+window.performSearch = commitSearch;
+
+function tabCounts() {
+    const tabs = [['all', 'All', lastResults.length]];
+    [['movies', 'Movies'], ['series', 'Series'], ['anime', 'Anime']].forEach(([k, l]) => { const c = lastResults.filter(([_, m]) => MX.tabsOf(m).includes(k)).length; if (c) tabs.push([k, l, c]); });
+    const g = {}; lastResults.forEach(([_, m]) => MX.genresOf(m).forEach(x => g[x] = (g[x] || 0) + 1));
+    Object.entries(g).sort((a, b) => b[1] - a[1]).slice(0, 6).forEach(([k, c]) => tabs.push(['g:' + k, k, c]));
+    return tabs;
+}
+function renderSearchResults() {
+    document.getElementById('search-home').classList.add('hidden');
+    document.getElementById('search-view').classList.remove('hidden');
+    const terms = termsOf(lastTerm), tabs = tabCounts();
+    document.getElementById('sr-tabs').innerHTML = tabs.map(([k, l]) => `<button data-k="${esc(k)}" class="${k === searchTab ? 'on' : ''}">${esc(l)}</button>`).join('');
+    const shown = lastResults.filter(([_, m]) => searchTab === 'all' || (searchTab.startsWith('g:') ? MX.genresOf(m).includes(searchTab.slice(2)) : MX.tabsOf(m).includes(searchTab)));
+    const list = document.getElementById('search-results'), rel = document.getElementById('sr-related');
+    if (shown.length) {
+        list.innerHTML = shown.map(([id, m]) => `
+            <div class="sr-row" onclick="clickSearchResult('${id}', '${esc(m.title).replace(/'/g, "\\'")}')">
+                <div class="sr-poster" ${mxT(m)}>${mxImg(m)}${mxBadges(m)}</div>
+                <div class="sr-info"><p class="sr-title">${hl(m.title, terms)}</p>${mxMeta(m)}</div>
+                <span class="ml-play"><i class="fas fa-play"></i></span>
+            </div>`).join('');
+        // Related Collection: other titles sharing genres with the top results
+        const ids = new Set(lastResults.map(e => e[0])), top = shown.slice(0, 3).flatMap(e => MX.genresOf(e[1]));
+        const relList = mxSortHot(mxList().filter(([id, m]) => !ids.has(id) && MX.genresOf(m).some(g => top.includes(g)))).slice(0, 12);
+        rel.classList.toggle('hidden', !relList.length);
+        rel.innerHTML = relList.length ? `<h3 class="br-h3">Related Collection</h3><div class="nf-strip no-scrollbar" style="padding:0 16px 20px">${relList.map(([id, m]) => `<div class="nf-card" onclick="showMovieDetails('${id}')"><div class="nf-poster" ${mxT(m)}>${mxImg(m)}${mxBadges(m)}</div></div>`).join('')}</div>` : '';
+    } else {
+        rel.classList.add('hidden');
+        const hot = mxSortHot(mxList()).slice(0, 5);
+        list.innerHTML = `<div class="nf-empty"><i class="fas fa-search" style="font-size:38px;display:block;margin-bottom:10px"></i>No results for "${esc(lastTerm)}"<br><small>Check the spelling or try another word.</small></div>` +
+            (hot.length ? '<h3 class="br-h3">Try these</h3>' + hot.map(([id, m]) => `<div class="sr-row" onclick="showMovieDetails('${id}')"><div class="sr-poster" ${mxT(m)}>${mxImg(m)}</div><div class="sr-info"><p class="sr-title">${esc(m.title)}</p>${mxMeta(m)}</div></div>`).join('') : '');
     }
+}
 
-    // Public names used by auth.js, inline markup and older bookmarks.
-    window.renderSearchHistory = renderSearchHistory;
-    window.clearSearchHistory = clearSearchHistory;
-    window.renderTopSearches = renderTopSearches;
-    window.performSearch = performSearch;
-    window.showSuggestions = showSuggestions;
-    window.selectSuggestion = (id, title) => openMovie(id, { addHistory: true, clearInput: true, title });
-    window.clickSearchResult = (id, title) => openMovie(id, { addHistory: true, title });
+// ---------- events ----------
+document.getElementById('sr-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (b) { searchTab = b.dataset.k; renderSearchResults(); } });
+document.getElementById('search-page').addEventListener('click', (e) => { const c = e.target.closest('[data-term]'); if (c) commitSearch(c.dataset.term); });
+searchInput.addEventListener('input', (e) => {
+    const term = e.target.value, has = term.length > 0;
+    searchClearBtn.classList.toggle('hidden', !has); searchGoBtn.classList.toggle('hidden', !has);
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => { if (!has) renderSearchHistory(); else showSuggestions(term); }, 200);
+});
+searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); commitSearch(searchInput.value); } });
+searchGoBtn.addEventListener('click', () => commitSearch(searchInput.value));
+searchClearBtn.addEventListener('click', () => { searchInput.value = ''; searchClearBtn.classList.add('hidden'); searchGoBtn.classList.add('hidden'); renderSearchHistory(); searchInput.focus(); });
+searchInput.addEventListener('focus', () => { if (searchInput.value.trim()) searchGoBtn.classList.remove('hidden'); });
+document.addEventListener('click', (e) => { if (!suggestionsDiv.contains(e.target) && !searchInput.contains(e.target)) suggestionsDiv.classList.add('hidden'); });
 
-    renderSearchHistory();
-    if (searchPageEl && searchPageEl.classList.contains('active')) renderTopSearches();
-})();
+// voice search (Chrome/Android; hidden where unsupported)
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition, micBtn = document.getElementById('search-mic-btn');
+if (SR) {
+    micBtn.classList.remove('hidden');
+    micBtn.addEventListener('click', () => {
+        const r = new SR(); r.lang = navigator.language || 'en-US'; r.interimResults = false;
+        micBtn.classList.add('on');
+        r.onresult = (ev) => commitSearch(ev.results[0][0].transcript);
+        r.onend = r.onerror = () => micBtn.classList.remove('on');
+        try { r.start(); } catch (e) { micBtn.classList.remove('on'); }
+    });
+}
+window.addEventListener('load', loadPopular);
+auth.onAuthStateChanged(u => { if (u) loadPopular(); });
+
+window.resetSearchPage = () => { searchInput.value = ''; searchClearBtn.classList.add('hidden'); searchGoBtn.classList.add('hidden'); lastTerm = ''; renderSearchHistory(); };
+
+// Cached first paint / late Firebase snapshots refresh the empty search state in place.
+window.addEventListener('movex:movies-updated', () => {
+    const home = document.getElementById('search-home');
+    if (home && !home.classList.contains('hidden')) renderSearchHistory();
+});

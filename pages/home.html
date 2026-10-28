@@ -1,9 +1,11 @@
 <div id="home-page" class="page active relative min-h-screen overflow-hidden">
     <div class="hero"><div class="hero-track" id="carousel"><div class="skeleton w-full h-full" style="border-radius:0"></div></div>
         <div class="nf-chips" id="home-chips">
-            <button data-f="series" onclick="setHomeFilter('series')">Series</button>
-            <button data-f="movie" onclick="setHomeFilter('movie')">Movies</button>
-            <button onclick="showPage('categories-page')">Categories <i class="fas fa-caret-down"></i></button>
+            <button data-t="home" class="on" onclick="setHomeTab('home')">Home</button>
+            <button data-t="movies" onclick="setHomeTab('movies')">Movies</button>
+            <button data-t="series" onclick="setHomeTab('series')">Series</button>
+            <button data-t="anime" onclick="setHomeTab('anime')">Anime</button>
+            <button class="hm-explore" onclick="showPage('categories-page')"><i class="fas fa-compass"></i> Explore</button>
         </div>
     </div>
     <div id="movie-carousels-container" class="relative z-10 pb-10 px-4">

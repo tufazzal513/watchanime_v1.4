@@ -86,7 +86,9 @@ function updateEditPanelVisibility() {
 }
 
 window.addSeasonUI = function() {
-    const newSeasonName = `Season ${seasonsData.length + 1}`;
+    let n = seasonsData.length + 1;
+    while (seasonsData.some(x => x.name === `Season ${n}`)) n++;
+    const newSeasonName = `Season ${n}`;
     seasonsData.push({ name: newSeasonName, episodes: [] });
     selectSeason(seasonsData.length - 1);
 };

@@ -18,3 +18,8 @@ What the rules do
 Not covered / assumptions
 - I could not run these rules against your database. If something stops working after publishing, use the **Rules Playground** in the console or restore your old rules.
 - If you use a feature that writes to a path not listed above, it will be blocked until a rule is added.
+
+## New nodes in this version (Part 1)
+- `stats/<movieId>/plays` and `stats/<movieId>/lists`: counters that feed the "Hot" lists. Any logged-in user may change a counter by exactly +1 (plays) or +1/-1 (lists). Only admins can write the whole `stats` node (for example to reset it).
+- `searchStats/<term>`: `{t: term, c: count, at: time}` for "Everyone is searching". A logged-in user may add one search at a time (+1). Term length 2-40.
+- Anyone can still inflate a counter by running scripts; the rules only stop big jumps.

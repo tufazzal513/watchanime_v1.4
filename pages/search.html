@@ -1,41 +1,39 @@
-<div id="search-page" class="page p-4 relative min-h-[80vh] overflow-hidden">
-    <!-- Premium Header -->
-    <div class="flex items-center gap-3 mb-6 relative z-10">
-        <div class="w-10 h-10 rounded-full bg-indigo-600/20 flex items-center justify-center border border-indigo-500/30 shadow-lg">
-            <i class="fas fa-search text-indigo-400 text-lg"></i>
+<div id="search-page" class="page">
+    <div class="sr-bar">
+        <button class="sr-back" onclick="goBack()" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
+        <div class="sr-box">
+            <i class="fas fa-search sr-ico"></i>
+            <input type="search" id="search-input" placeholder="Search movies, series, anime..." autocomplete="off" enterkeyhint="search">
+            <button id="search-clear-btn" class="sr-x hidden" aria-label="Clear"><i class="fas fa-times-circle"></i></button>
+            <button id="search-go-btn" class="sr-go hidden">Search</button>
         </div>
-        <h2 class="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 tracking-wide">Discover</h2>
+        <button id="search-mic-btn" class="sr-mic hidden" aria-label="Voice search"><i class="fas fa-microphone"></i></button>
+    </div>
+    <div id="search-suggestions" class="sr-sug hidden"></div>
+
+    <div id="search-home">
+        <div id="search-history-container" class="sr-sec hidden">
+            <div class="sr-sech"><h3>Recent</h3><button onclick="clearSearchHistory()"><i class="far fa-trash-alt"></i> Clear</button></div>
+            <div id="search-history-chips" class="sr-chips"></div>
+            <button id="sr-more" class="sr-more hidden" onclick="toggleRecent()"><i class="fas fa-chevron-down"></i></button>
+        </div>
+        <div id="search-popular" class="sr-sec hidden">
+            <div class="sr-sech"><h3><i class="fas fa-fire" style="color:#ff7a18"></i> Everyone is searching</h3></div>
+            <div id="search-popular-chips" class="sr-chips"></div>
+        </div>
+        <div class="sr-sec">
+            <div class="sr-hot-tabs no-scrollbar" id="hot-tabs">
+                <button data-h="movies" class="on" onclick="setHotTab('movies')">Hot Movies</button>
+                <button data-h="series" onclick="setHotTab('series')">Hot Series</button>
+                <button data-h="anime" onclick="setHotTab('anime')">Hot Anime</button>
+            </div>
+            <div id="top-searches" class="sr-hot"></div>
+        </div>
     </div>
 
-    <!-- Glowing Search Bar -->
-    <div class="relative z-20 mb-6 group">
-        <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl blur-md opacity-20 group-hover:opacity-40 transition duration-500 pointer-events-none"></div>
-        <div class="relative flex items-center bg-slate-800/80 backdrop-blur-md rounded-xl border border-slate-600/60 overflow-visible shadow-lg focus-within:border-indigo-500/80 focus-within:ring-1 focus-within:ring-indigo-500/50 transition-all">
-            <i class="fas fa-search text-gray-400 ml-4 text-lg"></i>
-            <input type="text" id="search-input" class="w-full bg-transparent text-white p-4 focus:outline-none placeholder-gray-500 font-medium" placeholder="Search movies, cast, categories..." autocomplete="off" aria-label="Search movies, cast and categories">
-            <button id="search-clear-btn" type="button" class="hidden pr-4 text-gray-400 hover:text-white transition-colors" aria-label="Clear search">
-                <i class="fas fa-times-circle text-lg"></i>
-            </button>
-        </div>
-        <div id="search-suggestions" class="search-suggestions hidden" aria-label="Search suggestions"></div>
+    <div id="search-view" class="hidden">
+        <div class="sr-tabs no-scrollbar" id="sr-tabs"></div>
+        <div id="search-results" class="sr-list"></div>
+        <div id="sr-related" class="hidden"></div>
     </div>
-
-    <!-- Search History -->
-    <div id="search-history-container" class="mt-4 mb-6 hidden relative z-10">
-        <div class="flex items-center justify-between mb-3">
-            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><i class="fas fa-history text-indigo-400"></i> Recent Searches</p>
-            <button onclick="clearSearchHistory()" type="button" class="text-[10px] text-red-400 hover:text-red-300 hover:underline uppercase font-bold tracking-wider">Clear</button>
-        </div>
-        <div id="search-history-chips" class="flex flex-wrap gap-2"></div>
-    </div>
-
-    <!-- Compact Top 5 Searches -->
-    <div id="top-searches" class="hidden relative z-10 mt-4" aria-live="polite"></div>
-
-    <!-- Results Grid -->
-    <div id="search-results" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 lg:gap-6 mt-2 relative z-10 pb-10" aria-live="polite"></div>
-
-    <!-- Background Glow Elements -->
-    <div class="absolute top-[15%] right-[-10%] w-72 h-72 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none"></div>
-    <div class="absolute bottom-[20%] left-[-10%] w-64 h-64 bg-purple-600/10 rounded-full blur-[100px] pointer-events-none"></div>
 </div>

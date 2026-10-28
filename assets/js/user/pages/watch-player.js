@@ -51,7 +51,7 @@ window.showMovieDetails = (movieId, push = true) => {
     const cover = movie.coverUrl || movie.posterUrl || '';
     const similar = Object.entries(allMovies).filter(([id, m]) => id !== movieId && (!m.isUpcoming || new Date(m.releaseDate) <= now))
         .map(([id, m]) => [id, m, (m.category && m.category === movie.category ? 2 : 0) + (m.contentType === movie.contentType ? 1 : 0)])
-        .sort((a, b) => b[2] - a[2]).slice(0, 18);
+        .sort((a, b) => b[2] - a[2]).slice(0, 30);
     const meta = `<span class="mv-ico"><i class="fas ${isSeries ? 'fa-tv' : 'fa-film'}"></i></span>${movie.rating ? `<span><i class="fas fa-star" style="color:#facc15"></i> ${esc(movie.rating)}</span>` : ''}${movie.year ? `<span>${esc(movie.year)}</span>` : ''}${movie.category ? `<span>${esc(movie.category)}</span>` : ''}<span>${isSeries ? seasonKeys.length + (seasonKeys.length > 1 ? ' seasons' : ' season') : 'Movie'}</span>`;
 
     $id('movie-details-content').innerHTML = `
@@ -101,12 +101,12 @@ window.showMovieDetails = (movieId, push = true) => {
           <button class="mv-pill" onclick="openShare()"><i class="fas fa-share-alt"></i> Share</button>
         </div>
         ${isSeries ? `<div class="mv-res"><h3>Resources</h3>
-          <div class="mv-sel">${seasonKeys.length > 1 ? `<select id="mv-season" onchange="selectSeason(this.value)">${seasonKeys.map(k => `<option value="${esc(k)}" ${k === currentSeasonKey ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select>` : ''}</div>
+          <div class="mv-sel">${seasonKeys.length ? `<select id="mv-season" onchange="selectSeason(this.value)">${seasonKeys.map(k => `<option value="${esc(k)}" ${k === currentSeasonKey ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select>` : ''}</div>
           <div class="mv-eps no-scrollbar" id="mv-eps"></div></div>` : ''}
       </div>
 
-      <div class="mv-side"><h3 class="mv-foryou">For you</h3>
-        <div class="nf-grid">${similar.map(([id, m]) => `<div class="nf-gcard" onclick="showMovieDetails('${id}')"><img src="${esc(m.posterUrl)}" loading="lazy" alt="">${m.contentType === 'series' ? '<span class="nf-badge">SERIES</span>' : ''}<p>${esc(m.title)}</p></div>`).join('') || '<p class="nf-empty">Nothing to show yet.</p>'}</div>
+      <div class="mv-side"><div class="mv-tabs"><span>For you</span></div>
+        <div class="mx-grid">${similar.map(([id, m]) => mxGridCard(id, m)).join('') || '<p class="nf-empty">Nothing to show yet.</p>'}</div>
       </div>
     </div>`;
 
@@ -126,20 +126,17 @@ window.showMovieDetails = (movieId, push = true) => {
 
 // ---------- episodes ----------
 window.selectSeason = (k) => { currentSeasonKey = k; renderEpRow(); };
-const epActive = (i) => i === PL.activeEp && currentSeasonKey === PL.activeSeason;
+// UI state for the red active mark: PL.mode is cleared by plLoad/plTeardown, so keep our own.
+const epActive = (i) => PL.activeSeason === currentSeasonKey && PL.activeEp === i;
 const renderEpRow = () => {
     const movie = allMovies[currentMovieId]; const box = $id('mv-eps'); if (!box) return;
     const eps = movie.seasons[currentSeasonKey] || [];
     if (!eps.length) { box.innerHTML = '<span class="nf-empty" style="padding:8px">No episodes released yet.</span>'; return; }
     box.innerHTML = `<button class="mv-ep all" onclick="openAllEps()">All</button>` + eps.map((e, i) => `<button class="mv-ep ${epActive(i) ? 'on' : ''}" title="${esc(e.name)}" onclick="playEpisode(${i})">${String(i + 1).padStart(2, '0')}</button>`).join('');
-    // Keep the highlighted episode visible without scrolling the whole page.
-    const active = box.querySelector('.mv-ep.on');
-    if (active) {
-        const all = box.querySelector('.mv-ep.all');
-        const pad = all ? all.getBoundingClientRect().width + 8 : 0;
-        const r = active.getBoundingClientRect(), b = box.getBoundingClientRect();
-        const center = (pad + b.width) / 2;
-        box.scrollLeft = Math.max(0, box.scrollLeft + (r.left - b.left) - (center - r.width / 2));
+    const on = box.querySelector('.mv-ep.on');
+    if (on) {
+        const left = on.offsetLeft - box.clientWidth / 2 + on.clientWidth / 2;
+        try { box.scrollTo({ left: Math.max(0, left), behavior: 'smooth' }); } catch (e) { box.scrollLeft = Math.max(0, left); }
     }
 };
 window.openAllEps = () => {
@@ -151,7 +148,8 @@ window.openAllEps = () => {
 window.plEpsBtn = () => { if (plIsFs()) plFs(); openAllEps(); };
 window.playEpisode = (i) => {
     const movie = allMovies[currentMovieId]; const eps = movie.seasons && movie.seasons[currentSeasonKey]; if (!eps || !eps[i]) return;
-    currentEpIndex = i; PL.resumeAt = 0; PL.activeSeason = currentSeasonKey; PL.activeEp = i;
+    currentEpIndex = i; PL.resumeAt = 0;
+    PL.activeSeason = currentSeasonKey; PL.activeEp = i;
     const pr = progressMap[currentMovieId]; if (pr && pr.season === currentSeasonKey && pr.ep === i && pr.t > 5) PL.resumeAt = pr.t;
     const sel = $id('mv-season'); if (sel) sel.value = currentSeasonKey;
     renderEpRow(); window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -204,7 +202,7 @@ const wakeOff = () => { try { if (PL.wake) PL.wake.release(); } catch (e) {} PL.
 
 window.startPlayback = () => {
     const m = allMovies[currentMovieId]; if (!m) return;
-    if (m.contentType === 'series' && m.seasons) { const e = epList()[currentEpIndex]; if (!e) return plToast('No episodes yet'); PL.activeSeason = currentSeasonKey; PL.activeEp = currentEpIndex; plLoad(getLink(e), e.name); renderEpRow(); }
+    if (m.contentType === 'series' && m.seasons) { const e = epList()[currentEpIndex]; if (!e) return plToast('No episodes yet'); PL.activeSeason = currentSeasonKey; PL.activeEp = currentEpIndex; renderEpRow(); plLoad(getLink(e), e.name); }
     else plLoad(getLink(m), null);
 };
 const plLoad = (url, epName) => {
@@ -271,7 +269,7 @@ const plTick = () => {
     plSave(false);
 };
 const plBuf = () => { const v = vid(); if (v && v.buffered.length && v.duration) $id('pl-buf').style.width = (v.buffered.end(v.buffered.length - 1) / v.duration * 100) + '%'; };
-const plSave = (force) => { const m = allMovies[currentMovieId]; if (!m || !PL.started) return; saveProgress(currentMovieId, currentSeasonKey, currentEpIndex < 0 ? null : currentEpIndex, plCur(), plDurV(), force); };
+const plSave = (force) => { const m = allMovies[currentMovieId]; if (!m || !PL.started) return; if (plCur() >= 30 && typeof mxCountPlay === 'function') mxCountPlay(currentMovieId); saveProgress(currentMovieId, currentSeasonKey, currentEpIndex < 0 ? null : currentEpIndex, plCur(), plDurV(), force); };
 const plEnded = () => {
     setPlaying(false); saveProgress(currentMovieId, currentSeasonKey, currentEpIndex, 1, 1, true);
     if (currentEpIndex > -1 && currentEpIndex + 1 < epList().length) {

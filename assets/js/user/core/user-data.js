@@ -1,7 +1,8 @@
 // --- USER DATA -----------------------------------------------------------
-// Robust startup: cached first paint, independent rendering, error callbacks,
-// a watchdog with a Retry button, and automatic re-attach when the connection
-// comes back. Data loading is owned here (not by a timer in auth.js).
+// Robust startup: cached first paint, independent rendering, listener error
+// callbacks, a watchdog with a Retry button, and automatic re-attach when the
+// connection comes back. Data loading is owned here (auth.js only keeps a
+// guarded safety net), so one slow/failed listener can never blank the app.
 // -------------------------------------------------------------------------
 const DATA_CACHE_KEY = 'movex_data_cache_v2';
 const DATA_WAIT_MS   = 12000;
@@ -42,18 +43,17 @@ const renderMyListSafe = () => {
     catch (e) { console.warn('[data] renderMyListPage failed', e); }
 };
 const dataNotifyMovies = () => {
-    // Search listens for this to refresh cached/live Top Searches and results.
+    // Search listens for this to refresh its lists when data arrives late.
     try { window.dispatchEvent(new Event('movex:movies-updated')); }
     catch (e) {
-        try { if (typeof renderTopSearches === 'function') renderTopSearches(); }
+        try { if (typeof renderSearchHistory === 'function') renderSearchHistory(); }
         catch (_) {}
     }
 };
 
 function dataCacheSave() {
     try {
-        const payload = JSON.stringify({ t: Date.now(), movies: allMovies,
-                                         categories: allCategories, banners: __lastBanners });
+        const payload = JSON.stringify({ t: Date.now(), movies: allMovies, banners: __lastBanners });
         if (payload.length > 3000000) return;   // stay well below the localStorage quota
         localStorage.setItem(DATA_CACHE_KEY, payload);
     } catch (e) {}
@@ -66,7 +66,6 @@ function dataCacheLoad() {
         const d = JSON.parse(raw);
         if (!d || typeof d.movies !== 'object' || !d.movies || !Object.keys(d.movies).length) return false;
         allMovies = d.movies || {};
-        allCategories = d.categories || {};
         __lastBanners = d.banners || null;
         renderHomeSafe();
         renderCategoriesSafe();
@@ -162,18 +161,11 @@ function dataAttach() {
         Object.keys(raw).forEach(id => { if (raw[id] && !raw[id].isPrivate) allMovies[id] = raw[id]; });
         dataCacheSave();
         renderHomeSafe();
+        renderCategoriesSafe();
         renderMyListSafe();
         if (__lastBanners) renderBannersSafe(__lastBanners);
         dataNotifyMovies();
         startupRoute();
-    });
-
-    // Categories are optional for the home page: render even if they never arrive.
-    bind('categories', (s) => {
-        allCategories = s.val() || {};
-        dataCacheSave();
-        renderCategoriesSafe();
-        renderHomeSafe();
     });
 
     bind('banners', (s) => {

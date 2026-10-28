@@ -13,9 +13,11 @@
 
   var SCRIPTS = [
       "../shared/firebase-config.js",
+      "../shared/taxonomy.js",
       "core/firebase-init.js",
       "core/app-details.js",
       "core/state.js",
+      "core/ui-kit.js",
       "core/utils.js",
       "core/error-logger.js",
       "core/carousel-state.js",

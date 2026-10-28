@@ -86,11 +86,11 @@ body.pl-lock{overflow:hidden}
 .mv-sel select,.mv-sheet-sel{background:#1c1c1c;color:#fff;border:1px solid #444;border-radius:4px;padding:9px 12px;font-size:14px}
 .mv-eps{display:flex;gap:8px;overflow-x:auto;margin-top:12px;padding-bottom:4px}
 .mv-ep{flex:none;min-width:50px;height:46px;border-radius:6px;background:#2a2a2a;color:#fff;font-weight:700;padding:0 14px}
-.mv-eps>.mv-ep.all{position:sticky;left:0;z-index:3;background:#2a2a2a;box-shadow:8px 0 12px -8px rgba(0,0,0,.9)}
-.mv-ep.on{background:var(--nf)}
+.mv-ep.all{position:sticky;left:0;z-index:2;background:#2a2a2a;box-shadow:4px 0 6px -2px rgba(0,0,0,.55)}
+.mv-ep.on{background:var(--nf,#e50914)}
 .mv-foryou{font-size:20px;font-weight:700;padding:18px 16px 10px}
 .mv-side .nf-grid{padding:0 16px}
-.nf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.nf-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .nf-gcard{position:relative;cursor:pointer}
 .nf-gcard img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:4px;background:#222}
 .nf-gcard p{font-size:12px;margin-top:4px;color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -106,9 +106,9 @@ body.pl-lock{overflow:hidden}
   .mv-wrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"player side" "info side";column-gap:24px;align-content:start;max-width:1280px;margin:0 auto;padding:72px 24px 40px}
   .pl-sticky{grid-area:player;position:static;border-radius:8px;overflow:hidden}
   .mv-info{grid-area:info;padding:16px 0}.mv-side{grid-area:side}.mv-foryou{padding-top:0}
-  .mv-side .nf-grid{padding:0;grid-template-columns:repeat(2,1fr)}
+  .mv-side .nf-grid{padding:0;grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-@media(min-width:640px) and (max-width:1023px){.nf-grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:640px) and (max-width:1023px){.nf-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
 /* sheets */
 .mv-sheet{position:fixed;inset:0;z-index:200}
@@ -133,3 +133,9 @@ body.pl-lock{overflow:hidden}
 
 /* on desktop the top navigation hides while a title page is open (the Back arrow is on the player) */
 @media(min-width:768px){body:has(#movie-details-page.active) #main-nav{display:none}}
+
+/* For you (MovieBox style: tab-like header + poster grid) */
+.mv-tabs{display:flex;border-bottom:1px solid #2a2a2a;padding:0 16px;margin-top:8px}
+.mv-tabs span{font-size:20px;font-weight:700;padding:10px 0 8px;border-bottom:3px solid var(--nf,#e50914);color:#fff}
+.mv-side .mx-grid{padding:14px 16px 28px}
+@media(min-width:1024px){.mv-side .mv-tabs{padding:0}.mv-side .mx-grid{padding:14px 0 28px;grid-template-columns:repeat(2,minmax(0,1fr))}}

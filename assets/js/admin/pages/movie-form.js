@@ -17,6 +17,7 @@ if (isUpcomingCheckbox) {
 
 const resetMovieForm = () => {
     if (movieForm) movieForm.reset();
+    if (window.mxCls) mxCls.reset();
     const editIdEl = document.getElementById('movie-edit-id');
     if (editIdEl) editIdEl.value = '';
 
@@ -44,12 +45,11 @@ db.ref('movies').on('value', snapshot => {
 
     const catSelect = document.getElementById('category-filter');
     if(catSelect) {
-        const categories = new Set();
-        Object.values(allMoviesCache).forEach(m => {
-            if(m.category) categories.add(m.category);
-        });
-        catSelect.innerHTML = '<option value="all">All Categories</option>' + 
-            Array.from(categories).sort().map(c => `<option value="${c}">${c}</option>`).join('');
+        catSelect.innerHTML = '<option value="all">All Genres</option>' + MX.GENRES.map(c => `<option value="${c}">${c}</option>`).join('');
+        const indSel = document.getElementById('industry-filter');
+        if (indSel && indSel.options.length < 2) indSel.innerHTML = '<option value="all">All Industries</option>' + MX.INDUSTRIES.map(c => `<option value="${c}">${c}</option>`).join('');
+        const lgSel = document.getElementById('lang-filter');
+        if (lgSel && lgSel.options.length < 2) lgSel.innerHTML = '<option value="all">All Languages</option>' + MX.LANGUAGES.map(c => `<option value="${c}">${c}</option>`).join('');
     }
 
     const yearSelect = document.getElementById('year-filter');
@@ -68,6 +68,8 @@ let currentTypeFilter = 'all';
 let currentStatusFilter = 'all';
 let currentUpcomingFilter = 'all';
 let currentCategoryFilter = 'all';
+let currentIndustryFilter = 'all';
+let currentLangFilter = 'all';
 let currentYearFilter = 'all';
 let currentSearchTerm = '';
 
@@ -104,7 +106,13 @@ function renderAllMoviesTable(data) {
     }
 
     if(currentCategoryFilter !== 'all') {
-        filteredData = filteredData.filter(([_, m]) => m.category === currentCategoryFilter);
+        filteredData = filteredData.filter(([_, m]) => MX.genresOf(m).includes(currentCategoryFilter));
+    }
+    if(currentIndustryFilter !== 'all') {
+        filteredData = filteredData.filter(([_, m]) => m.industry === currentIndustryFilter);
+    }
+    if(currentLangFilter !== 'all') {
+        filteredData = filteredData.filter(([_, m]) => MX.langsOf(m).includes(currentLangFilter));
     }
 
     if(currentYearFilter !== 'all') {
@@ -153,7 +161,7 @@ function renderAllMoviesTable(data) {
             </td>
             <td class="p-3">${typeBadge}</td>
             <td class="p-3"><span class="text-xs ${movie.isPrivate ? 'text-gray-500' : 'text-green-400'}">${movie.isPrivate ? 'Private' : 'Public'}</span></td>
-            <td class="p-3 text-blue-400 text-xs"><span class="bg-blue-900/30 px-2 py-1 rounded">${movie.category}</span></td>
+            <td class="p-3 text-blue-400 text-xs"><span class="bg-blue-900/30 px-2 py-1 rounded">${[MX.typeOf(movie), movie.industry].filter(Boolean).join(' · ')}</span><br><span class="text-[10px] text-gray-400">${MX.genresOf(movie).join(', ') || '—'}</span></td>
             <td class="p-3 text-xs text-gray-400">${movie.year}</td>
             <td class="p-3 text-right">
                 <button onclick="editMovie('${id}')" class="bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white p-2 rounded-lg mr-2"><i class="fas fa-edit"></i></button>
@@ -184,6 +192,10 @@ window.filterMovies = (type, value) => {
         });
     } else if(type === 'category') {
         currentCategoryFilter = value;
+    } else if(type === 'industry') {
+        currentIndustryFilter = value;
+    } else if(type === 'lang') {
+        currentLangFilter = value;
     } else if(type === 'year') {
         currentYearFilter = value;
     }

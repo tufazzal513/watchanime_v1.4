@@ -4,11 +4,8 @@ function updateDashboard(){
     if(__dashboardBound) return;
     __dashboardBound = true;
 
-    // Categories Count Update
-    db.ref('categories').on('value', s => {
-        const el = document.getElementById('categories-count');
-        if(el) el.textContent = s.numChildren();
-    });
+    // Genres (fixed list)
+    (function(){ const el = document.getElementById('categories-count'); if(el && window.MX) el.textContent = MX.GENRES.length; })();
 
     // Banners Count Update
     db.ref('banners').on('value', s => {

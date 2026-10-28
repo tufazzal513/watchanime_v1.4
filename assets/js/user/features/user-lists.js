@@ -1,12 +1,14 @@
 // --- MY LIST + CONTINUE WATCHING (stored in Firebase under the user's own account) ---
 window.myListIds = {};       // { movieId: addedAt }
 window.progressMap = {};     // { movieId: {ep, season, t, d, at} }
-let _listUid = null, _listRef = null, _progRef = null;
+let _listUid = null, _listRef = null, _progRef = null, _statsRef = null;
 
 auth.onAuthStateChanged(user => {
-    if (_listRef) _listRef.off(); if (_progRef) _progRef.off();
+    if (_listRef) _listRef.off(); if (_progRef) _progRef.off(); if (_statsRef) _statsRef.off();
     myListIds = {}; progressMap = {}; _listUid = user ? user.uid : null;
     if (!user) return;
+    _statsRef = db.ref('stats');
+    _statsRef.on('value', st => { window.mxStats = st.val() || {}; if (typeof renderHomePage === 'function' && Object.keys(allMovies).length) renderHomePage(); }, () => {});
     _listRef = db.ref('users/' + user.uid + '/myList');
     _progRef = db.ref('users/' + user.uid + '/progress');
     _listRef.on('value', s => { myListIds = s.val() || {}; refreshListUI(); });
@@ -17,7 +19,8 @@ window.inMyList = (id) => !!myListIds[id];
 window.toggleMyList = (id, ev) => {
     if (ev) ev.stopPropagation();
     if (!_listUid || !id) return;
-    const ref = db.ref('users/' + _listUid + '/myList/' + id);
+    const ref = db.ref('users/' + _listUid + '/myList/' + id), adding = !myListIds[id];
+    if (adding || (mxStats[id] && mxStats[id].lists > 0)) db.ref('stats/' + id + '/lists').transaction(n => Math.max(0, (n || 0) + (adding ? 1 : -1))).catch(() => {});
     (myListIds[id] ? ref.remove() : ref.set(firebase.database.ServerValue.TIMESTAMP)).catch(() => {
         if (typeof showCustomModal === 'function') showCustomModal('alert', 'Could not update My List. Please try again.');
     });
@@ -35,14 +38,30 @@ window.refreshListUI = () => {
 window.renderMyListPage = () => {
     const grid = document.getElementById('mylist-grid'), empty = document.getElementById('mylist-empty');
     if (!grid) return;
-    const items = Object.entries(myListIds).sort((a, b) => (b[1] || 0) - (a[1] || 0)).map(([id]) => [id, allMovies[id]]).filter(([_, m]) => m);
+    const mode = (document.getElementById('ml-sort') || {}).value || 'added';
+    let items = Object.entries(myListIds).map(([id, at]) => [id, allMovies[id], at]).filter(([_, m]) => m);
+    if (mode === 'az') items.sort((a, b) => String(a[1].title).localeCompare(String(b[1].title)));
+    else if (mode === 'top') items.sort((a, b) => MX.ratingNum(b[1]) - MX.ratingNum(a[1]));
+    else items.sort((a, b) => (b[2] || 0) - (a[2] || 0));
     empty.classList.toggle('hidden', items.length > 0);
-    grid.innerHTML = items.map(([id, m]) => `
-        <div class="nf-gcard" onclick="showMovieDetails('${id}')">
-            <img src="${esc(m.posterUrl)}" loading="lazy" alt="">
-            <button class="nf-x" onclick="toggleMyList('${id}', event)" aria-label="Remove"><i class="fas fa-times"></i></button>
-            <p>${esc(m.title)}</p>
-        </div>`).join('');
+    document.getElementById('ml-count').textContent = items.length ? items.length + (items.length === 1 ? ' title' : ' titles') : '';
+    const pct = (id) => { const p = progressMap[id]; return p && p.d ? Math.min(100, Math.round(p.t / p.d * 100)) : 0; };
+    grid.innerHTML = items.map(([id, m]) => {
+        const genres = MX.genresOf(m).slice(0, 3).map(g => `<span class="ml-g">${esc(g)}</span>`).join('');
+        return `
+        <div class="ml-row" onclick="showMovieDetails('${id}')">
+            <div class="ml-poster" ${mxT(m)}>${mxImg(m)}${mxBadges(m)}${pct(id) ? `<div class="nf-prog"><i style="width:${pct(id)}%"></i></div>` : ''}</div>
+            <div class="ml-info">
+                <p class="ml-title">${esc(m.title)}</p>
+                ${mxMeta(m, false)}
+                <div class="ml-genres">${genres}</div>
+            </div>
+            <div class="ml-act">
+                <span class="ml-play"><i class="fas fa-play"></i></span>
+                <button class="ml-rm" onclick="toggleMyList('${id}', event)" aria-label="Remove from My List"><i class="fas fa-bookmark"></i></button>
+            </div>
+        </div>`;
+    }).join('');
 };
 
 // --- watch progress (resume) ---
@@ -55,4 +74,13 @@ window.saveProgress = (movieId, season, ep, t, d, force) => {
     const ref = db.ref('users/' + _listUid + '/progress/' + movieId);
     if (t / d > 0.95) { ref.remove(); return; }       // finished: drop it
     ref.set({ season: season || null, ep: ep == null ? null : ep, t: Math.floor(t), d: Math.floor(d), at: firebase.database.ServerValue.TIMESTAMP });
+};
+
+// count one "play" per user per title per 6 hours, only after 30 seconds of real watching (feeds the Hot lists)
+window.mxCountPlay = (id) => {
+    if (!id || !_listUid) return;
+    const k = 'mx_played_' + id, last = +localStorage.getItem(k) || 0;
+    if (Date.now() - last < 6 * 3600e3) return;
+    localStorage.setItem(k, String(Date.now()));
+    db.ref('stats/' + id + '/plays').transaction(n => (n || 0) + 1).catch(() => {});
 };

@@ -18,7 +18,7 @@ let themeAutoInterval;
 db.ref('settings').on('value', s => {
     const d = s.val() || {};
 
-    // Global app configuration
+    // Ads & Others Configuration
     pwdResetLimit = parseInt(d.pwdResetLimit ?? 3, 10) || 3;
 
     // --- PREMIUM DYNAMIC THEME ENGINE ---

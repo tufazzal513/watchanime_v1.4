@@ -11,7 +11,7 @@ window.editMovie = (id) => {
     document.getElementById('movie-year').value = movie.year || '';
     document.getElementById('movie-poster').value = movie.posterUrl || '';
     document.getElementById('movie-rating').value = movie.rating || '';
-    document.getElementById('movie-category').value = movie.category || '';
+    if (window.mxCls) mxCls.set(movie);
     document.getElementById('movie-cover').value = movie.coverUrl || '';
     document.getElementById('movie-cast').value = movie.cast || '';
     document.getElementById('movie-description').value = movie.description || '';
@@ -58,6 +58,8 @@ movieForm.addEventListener('submit', (e) => {
         return;
     }
 
+    if (!mxCls.genres().length) { alert('Please select at least one genre.'); return; }
+
     const type = document.querySelector('input[name="content-type"]:checked').value;
 
     let formData = {
@@ -65,7 +67,7 @@ movieForm.addEventListener('submit', (e) => {
         year: document.getElementById('movie-year').value,
         posterUrl: document.getElementById('movie-poster').value,
         rating: document.getElementById('movie-rating').value,
-        category: document.getElementById('movie-category').value,
+        ...mxCls.get(),
         coverUrl: (document.getElementById('movie-cover').value || '').trim(),
         cast: document.getElementById('movie-cast').value,
         description: document.getElementById('movie-description').value,
@@ -81,7 +83,10 @@ movieForm.addEventListener('submit', (e) => {
         formData.server2 = null;   // second (VIP) link removed
     } else {
         let seasonsObj = {};
+        const emptySeasons = seasonsData.filter(x => !x.episodes.length);
+        if (emptySeasons.length && !confirm('These seasons have no episodes and will NOT be saved (a season needs at least one episode):\n' + emptySeasons.map(x => x.name).join(', ') + '\n\nContinue?')) return;
         seasonsData.forEach((season, idx) => {
+            if (!season.episodes.length) return;
             const seasonName = season.name || `Season ${idx+1}`;
             seasonsObj[seasonName] = season.episodes.map(ep => ({
                 name: ep.name,
@@ -107,8 +112,6 @@ movieForm.addEventListener('submit', (e) => {
         });
     }
 });
-
-// Categories CRUD (Customized for Edit/Delete with cascading updates)
 
 
 // live warning for http:// links (they are blocked on an https site)

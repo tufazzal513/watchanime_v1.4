@@ -28,7 +28,7 @@ themeRadios.forEach(radio => {
 db.ref('settings').on('value', s => {
     const data = s.val() || {};
 
-    // General settings
+    // Ads & Others
     document.getElementById('pwd-limit-input').value = data.pwdResetLimit || '3';
 
     // Theme Data

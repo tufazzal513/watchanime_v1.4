@@ -1,4 +1,4 @@
-/* ONE-TIME CLEANUP of data that belonged to removed systems (comments, downloads, ads, free/VIP server).
+/* ONE-TIME CLEANUP of data that belonged to removed systems (comments, downloads, free/VIP server).
  * HOW TO USE
  *  1. Deploy the new version first, open the ADMIN PANEL and log in as admin.
  *  2. Open the browser console (F12 -> Console), paste this whole file, press Enter.
@@ -10,9 +10,7 @@ window.cleanupOldData = async function (really) {
     const updates = {};
     const log = [];
     const nodes = ['comments', 'downloadLinks', 'analytics/downloadGate'];
-    const keys = ['dlGateEnabled', 'dlAdLimit', 'dlAdSeconds', 'dlAdUrl',
-                  'smartAdEnabled', 'adTimer', 'smartAdWatchSeconds', 'adUrl',
-                  'commentModEnabled', 'commentDislikeThreshold'];
+    const keys = ['dlGateEnabled', 'dlAdLimit', 'dlAdSeconds', 'dlAdUrl', 'commentModEnabled', 'commentDislikeThreshold'];
     nodes.forEach(n => { updates[n] = null; log.push('delete node: ' + n); });
     keys.forEach(k => { updates['settings/' + k] = null; log.push('delete setting: settings/' + k); });
 

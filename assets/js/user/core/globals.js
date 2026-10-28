@@ -11,7 +11,7 @@ try {
         searchHistory = savedHistory
             .filter((term) => typeof term === 'string' && term.trim())
             .map((term) => term.trim())
-            .slice(0, 6);
+            .slice(0, 12);
     }
 } catch (e) {
     searchHistory = [];
