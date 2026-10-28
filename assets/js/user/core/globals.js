@@ -2,7 +2,20 @@
 let playerMode = 'direct';
 let isPlaying = false;
 let vimeoPlayer, ytPlayer, updateInterval;
-let searchHistory = JSON.parse(localStorage.getItem('movex_search_history')) || [];
+
+// A broken saved value must never stop the later app scripts from loading.
+let searchHistory = [];
+try {
+    const savedHistory = JSON.parse(localStorage.getItem('movex_search_history') || '[]');
+    if (Array.isArray(savedHistory)) {
+        searchHistory = savedHistory
+            .filter((term) => typeof term === 'string' && term.trim())
+            .map((term) => term.trim())
+            .slice(0, 6);
+    }
+} catch (e) {
+    searchHistory = [];
+}
 
 // keep the desktop top navigation clear of the app name (it starts right after the name, whatever its length)
 (function () {

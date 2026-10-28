@@ -122,13 +122,8 @@ nav.fixed.bottom-0 .nav-btn.text-blue-500,nav.fixed.bottom-0 .nav-btn.active{col
 /* Skeletons */
 .skeleton{background:#2a2a2a!important}
 
-/* Search */
+/* Search (Top Searches component styles live in assets/css/user/search.css) */
 #search-page{padding-top:70px}
-.ts-title{font-size:20px;font-weight:700;margin-bottom:10px}
-.ts-row{display:flex;align-items:center;gap:12px;background:#2a2a2a;margin-bottom:3px;cursor:pointer}
-.ts-row img{width:90px;height:56px;object-fit:cover;object-position:top}
-.ts-name{flex:1;font-size:15px;font-weight:500;padding:0 4px}
-.ts-play{width:34px;height:34px;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;margin-right:12px}
 #search-page input{background:#333!important}
 
 /* Refresh (not first visit): no splash intro, just a quiet dark screen with a thin red loading line */

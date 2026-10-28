@@ -145,10 +145,20 @@ const showPage = (pageId, pushToHistory = true) => {
     localStorage.setItem('last_page_id', pageId);
     if (pushToHistory) history.pushState({ page: pageId }, null, "");
 
+    const searchSuggestions = document.getElementById('search-suggestions');
+    if(pageId !== 'search-page' && searchSuggestions) searchSuggestions.classList.add('hidden');
+
     if(pageId === 'search-page') {
-        renderSearchHistory();
-        document.getElementById('search-input').value = '';
-        document.getElementById('search-results').innerHTML = '';
+        // search.js may still be loading: never let this navigation abort startup.
+        try { if (typeof renderSearchHistory === 'function') renderSearchHistory(); } catch (e) {}
+        const searchField = document.getElementById('search-input');
+        const searchResults = document.getElementById('search-results');
+        const searchClear = document.getElementById('search-clear-btn');
+        if (searchField) searchField.value = '';
+        if (searchResults) searchResults.innerHTML = '';
+        if (searchClear) searchClear.classList.add('hidden');
+        if (searchSuggestions) searchSuggestions.classList.add('hidden');
+        try { if (typeof renderTopSearches === 'function') renderTopSearches(); } catch (e) {}
     }
 };
 

@@ -41,6 +41,14 @@ const renderMyListSafe = () => {
     try { if (typeof renderMyListPage === 'function') renderMyListPage(); }
     catch (e) { console.warn('[data] renderMyListPage failed', e); }
 };
+const dataNotifyMovies = () => {
+    // Search listens for this to refresh cached/live Top Searches and results.
+    try { window.dispatchEvent(new Event('movex:movies-updated')); }
+    catch (e) {
+        try { if (typeof renderTopSearches === 'function') renderTopSearches(); }
+        catch (_) {}
+    }
+};
 
 function dataCacheSave() {
     try {
@@ -63,6 +71,7 @@ function dataCacheLoad() {
         renderHomeSafe();
         renderCategoriesSafe();
         if (__lastBanners) renderBannersSafe(__lastBanners);
+        dataNotifyMovies();
         return true;
     } catch (e) { return false; }
 }
@@ -155,6 +164,7 @@ function dataAttach() {
         renderHomeSafe();
         renderMyListSafe();
         if (__lastBanners) renderBannersSafe(__lastBanners);
+        dataNotifyMovies();
         startupRoute();
     });
 

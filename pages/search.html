@@ -12,27 +12,28 @@
         <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl blur-md opacity-20 group-hover:opacity-40 transition duration-500 pointer-events-none"></div>
         <div class="relative flex items-center bg-slate-800/80 backdrop-blur-md rounded-xl border border-slate-600/60 overflow-visible shadow-lg focus-within:border-indigo-500/80 focus-within:ring-1 focus-within:ring-indigo-500/50 transition-all">
             <i class="fas fa-search text-gray-400 ml-4 text-lg"></i>
-            <input type="text" id="search-input" class="w-full bg-transparent text-white p-4 focus:outline-none placeholder-gray-500 font-medium" placeholder="Search movies, cast, categories..." autocomplete="off">
-            <button id="search-clear-btn" class="hidden pr-4 text-gray-400 hover:text-white transition-colors">
+            <input type="text" id="search-input" class="w-full bg-transparent text-white p-4 focus:outline-none placeholder-gray-500 font-medium" placeholder="Search movies, cast, categories..." autocomplete="off" aria-label="Search movies, cast and categories">
+            <button id="search-clear-btn" type="button" class="hidden pr-4 text-gray-400 hover:text-white transition-colors" aria-label="Clear search">
                 <i class="fas fa-times-circle text-lg"></i>
             </button>
         </div>
-        <div id="search-suggestions" class="search-suggestions hidden"></div>
+        <div id="search-suggestions" class="search-suggestions hidden" aria-label="Search suggestions"></div>
     </div>
 
     <!-- Search History -->
     <div id="search-history-container" class="mt-4 mb-6 hidden relative z-10">
         <div class="flex items-center justify-between mb-3">
             <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><i class="fas fa-history text-indigo-400"></i> Recent Searches</p>
-            <button onclick="clearSearchHistory()" class="text-[10px] text-red-400 hover:text-red-300 hover:underline uppercase font-bold tracking-wider">Clear</button>
+            <button onclick="clearSearchHistory()" type="button" class="text-[10px] text-red-400 hover:text-red-300 hover:underline uppercase font-bold tracking-wider">Clear</button>
         </div>
         <div id="search-history-chips" class="flex flex-wrap gap-2"></div>
     </div>
 
-    <!-- Results Grid -->
-    <div id="top-searches" class="hidden relative z-10 mt-4"></div>
+    <!-- Compact Top 5 Searches -->
+    <div id="top-searches" class="hidden relative z-10 mt-4" aria-live="polite"></div>
 
-    <div id="search-results" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 lg:gap-6 mt-2 relative z-10 pb-10"></div>
+    <!-- Results Grid -->
+    <div id="search-results" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 lg:gap-6 mt-2 relative z-10 pb-10" aria-live="polite"></div>
 
     <!-- Background Glow Elements -->
     <div class="absolute top-[15%] right-[-10%] w-72 h-72 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none"></div>
